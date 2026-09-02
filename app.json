@@ -1,24 +1,47 @@
 {
   "expo": {
-    "name": "Riffa_budget_tracker",
-    "slug": "Riffa_budget_tracker",
+    "name": "RIFAA",
+    "slug": "riffa",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "scheme": "rifaa",
     "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F5F6F4"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.rifaa.budget",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "RIFAA uses your photo library so you can set a profile picture."
+      },
+      "appleSignIn": true
     },
     "android": {
+      "package": "com.rifaa.budget",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#F5F6F4",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "static",
+      "backgroundColor": "#F5F6F4",
+      "themeColor": "#F5F6F4"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-web-browser",
+      "expo-image-picker",
+      "expo-apple-authentication"
+    ]
   }
 }
