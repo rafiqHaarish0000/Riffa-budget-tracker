@@ -31,3 +31,16 @@ export type NewSavingsContributionInput = {
   amount: number;
   date: string;
 };
+
+/** A contribution with the real contributor profile joined from `users`. */
+export type SavingsContributionWithUser = SavingsContribution & {
+  user?: {
+    id: string;
+    name: string | null;
+  } | null;
+};
+
+export type ContributionsResult = {
+  data: SavingsContributionWithUser[];
+  error: Error | null;
+};

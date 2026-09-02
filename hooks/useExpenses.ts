@@ -2,6 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Expense, NewExpenseInput } from '../types/expense';
 
+export type ExpenseDateRange = {
+  start: string; // inclusive YYYY-MM-DD
+  end: string; // inclusive YYYY-MM-DD
+};
+
 type UseExpensesResult = {
   expenses: Expense[];
   expense: Expense | null;
@@ -14,7 +19,11 @@ type UseExpensesResult = {
   getExpense: (id: string) => Promise<{ error: Error | null }>;
 };
 
-export function useExpenses(familyId: string | null, userId: string | null): UseExpensesResult {
+export function useExpenses(
+  familyId: string | null,
+  userId: string | null,
+  dateRange?: ExpenseDateRange,
+): UseExpensesResult {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [expense, setExpense] = useState<Expense | null>(null);
   const [loading, setLoading] = useState(true);
@@ -28,11 +37,11 @@ export function useExpenses(familyId: string | null, userId: string | null): Use
     }
 
     try {
-      const { data, error: queryError } = await supabase
-        .from('expenses')
-        .select('*')
-        .eq('family_id', familyId)
-        .order('date', { ascending: false });
+      let query = supabase.from('expenses').select('*').eq('family_id', familyId);
+      if (dateRange) {
+        query = query.gte('date', dateRange.start).lte('date', dateRange.end);
+      }
+      const { data, error: queryError } = await query.order('date', { ascending: false });
 
       if (queryError) {
         throw queryError;
@@ -50,7 +59,7 @@ export function useExpenses(familyId: string | null, userId: string | null): Use
     } finally {
       setLoading(false);
     }
-  }, [familyId, userId]);
+  }, [familyId, userId, dateRange]);
 
   useEffect(() => {
     loadExpenses();

@@ -193,11 +193,17 @@ export default function ExpenseDetailsScreen() {
       <ThemedScreen>
         <View style={styles.centered}>
           <ThemedText variant="heading" color={colors.text}>
-            Not found
+            Expense not found
           </ThemedText>
           <ThemedText variant="body" color={colors.textSecondary} style={styles.subtitle}>
-            {error ?? 'This expense could not be found.'}
+            {error ?? 'This expense may have been removed or you may not have access to it.'}
           </ThemedText>
+          <GlassButton
+            title="Go back"
+            variant="secondary"
+            onPress={() => router.back()}
+            style={styles.goBackButton}
+          />
         </View>
       </ThemedScreen>
     );
@@ -427,6 +433,11 @@ const styles = StyleSheet.create({
   subtitle: {
     textAlign: 'center',
     marginTop: spacing.sm,
+  },
+  goBackButton: {
+    marginTop: spacing.xl,
+    minWidth: 44,
+    minHeight: 44,
   },
   summaryCard: {
     flexDirection: 'row',

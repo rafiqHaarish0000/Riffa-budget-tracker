@@ -38,13 +38,14 @@ type AmountInputProps = {
   value: string;
   onChangeText: (value: string) => void;
   editable?: boolean;
+  label?: string;
 };
 
-export function AmountInput({ value, onChangeText, editable = true }: AmountInputProps) {
+export function AmountInput({ value, onChangeText, editable = true, label = 'Amount' }: AmountInputProps) {
   return (
     <View>
       <ThemedText variant="label" color={colors.textSecondary} style={styles.label}>
-        Amount
+        {label}
       </ThemedText>
       <GlassCard padding={spacing.lg}>
         <View style={styles.row}>

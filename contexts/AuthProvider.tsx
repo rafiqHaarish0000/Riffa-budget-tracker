@@ -91,18 +91,25 @@ export function AuthProvider({
       return { status: 'error', message: NOT_CONFIGURED_ERROR };
     }
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'apple',
-      options: { redirectTo: getWebRedirectUrl() },
-    });
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: { redirectTo: getWebRedirectUrl() },
+      });
 
-    if (error) {
+      if (error) {
+        return { status: 'error', message: GENERIC_ERROR };
+      }
+
+      // If no error was returned, the OAuth window was opened and Supabase will
+      // redirect back with the session once the user finishes signing in.
+      return { status: 'success' };
+    } catch (err) {
+      if (isAppleCancellation(err)) {
+        return { status: 'cancelled' };
+      }
       return { status: 'error', message: GENERIC_ERROR };
     }
-
-    // If no error was returned, the OAuth window was opened and Supabase will
-    // redirect back with the session once the user finishes signing in.
-    return { status: 'success' };
   }
 
   const signInWithApple = async (): Promise<SignInWithAppleResult> => {

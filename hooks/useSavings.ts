@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import type { NewSavingsContributionInput, NewSavingsGoalInput, SavingsContribution, SavingsGoal } from '../types/savings';
+import type {
+  NewSavingsContributionInput,
+  NewSavingsGoalInput,
+  SavingsContributionWithUser,
+  SavingsGoal,
+} from '../types/savings';
 
 type UseSavingsResult = {
   goals: SavingsGoal[];
@@ -11,7 +16,9 @@ type UseSavingsResult = {
   updateGoal: (id: string, patch: Partial<NewSavingsGoalInput>) => Promise<{ error: Error | null }>;
   deleteGoal: (id: string) => Promise<{ error: Error | null }>;
   addContribution: (input: NewSavingsContributionInput) => Promise<{ error: Error | null }>;
-  contributionsForGoal: (goalId: string) => Promise<SavingsContribution[]>;
+  contributionsForGoal: (
+    goalId: string,
+  ) => Promise<{ data: SavingsContributionWithUser[]; error: Error | null }>;
 };
 
 export function useSavings(familyId: string | null, userId: string | null): UseSavingsResult {
@@ -93,26 +100,60 @@ export function useSavings(familyId: string | null, userId: string | null): UseS
       if (!userId) {
         return { error: new Error('Not authenticated.') };
       }
+
+      // Read the goal's current saved amount so the contribution is centralized
+      // here rather than computed ad hoc in the screen.
+      const { data: goalData, error: goalError } = await supabase
+        .from('savings_goals')
+        .select('current_amount')
+        .eq('id', input.goal_id)
+        .maybeSingle();
+
+      if (goalError) {
+        return { error: new Error(goalError.message) };
+      }
+      const current = goalData?.current_amount ?? 0;
+      const nextCurrent = Math.max(0, current + input.amount);
+
       const { error: insertError } = await supabase.from('savings_contributions').insert({
         ...input,
         user_id: userId,
       });
-      if (!insertError) {
+      if (insertError) {
+        return { error: new Error(insertError.message) };
+      }
+
+      const { error: updateError } = await supabase
+        .from('savings_goals')
+        .update({ current_amount: nextCurrent })
+        .eq('id', input.goal_id);
+
+      if (!updateError) {
         await loadGoals();
       }
-      return { error: insertError ? new Error(insertError.message) : null };
+      return { error: updateError ? new Error(updateError.message) : null };
     },
     [userId, loadGoals],
   );
 
   const contributionsForGoal = useCallback(
-    async (goalId: string): Promise<SavingsContribution[]> => {
-      const { data } = await supabase
-        .from('savings_contributions')
-        .select('*')
-        .eq('goal_id', goalId)
-        .order('date', { ascending: false });
-      return data ?? [];
+    async (goalId: string): Promise<{ data: SavingsContributionWithUser[]; error: Error | null }> => {
+      try {
+        const { data, error } = await supabase
+          .from('savings_contributions')
+          .select('*, user:users(id, name)')
+          .eq('goal_id', goalId)
+          .order('date', { ascending: false });
+        if (error) {
+          throw error;
+        }
+        return { data: (data ?? []) as SavingsContributionWithUser[], error: null };
+      } catch (err) {
+        return {
+          data: [],
+          error: err instanceof Error ? err : new Error(String(err)),
+        };
+      }
     },
     [],
   );
