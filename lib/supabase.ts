@@ -1,5 +1,7 @@
 import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { SupportedStorage } from '@supabase/auth-js';
+import { Platform } from 'react-native';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
@@ -113,13 +115,51 @@ const devSupabase = {
 // Public client
 // ---------------------------------------------------------------------------
 
+/**
+ * Build a Supabase auth storage adapter that works on every environment the
+ * app runs in.
+ *
+ * - Native (iOS/Android)   -> AsyncStorage (persists across restarts).
+ * - Web browser            -> localStorage (persists across reloads).
+ * - Server-side render/SSR -> an in-memory no-op so the app never touches
+ *   `window`/`localStorage` in a Node context (which would throw). The real
+ *   storage is only read on the client after hydration.
+ */
+function createAuthStorage(): SupportedStorage {
+  if (Platform.OS === 'web') {
+    const memory = new Map<string, string>();
+    const hasWindow = typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+    return {
+      getItem: (key: string) =>
+        hasWindow ? Promise.resolve(window.localStorage.getItem(key)) : Promise.resolve(memory.get(key) ?? null),
+      setItem: (key: string, value: string) => {
+        if (hasWindow) {
+          window.localStorage.setItem(key, value);
+        } else {
+          memory.set(key, value);
+        }
+        return Promise.resolve();
+      },
+      removeItem: (key: string) => {
+        if (hasWindow) {
+          window.localStorage.removeItem(key);
+        } else {
+          memory.delete(key);
+        }
+        return Promise.resolve();
+      },
+    };
+  }
+  return AsyncStorage;
+}
+
 function createSupabaseClient(): SupabaseClient {
   if (!isSupabaseConfigured) {
     return devSupabase as unknown as SupabaseClient;
   }
   return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
-      storage: AsyncStorage,
+      storage: createAuthStorage(),
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,

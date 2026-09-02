@@ -4,7 +4,7 @@ export default function AuthScreen() {
   return (
     <PlaceholderScreen
       title="Sign In"
-      description="Sign in with Apple to continue."
+      description="Sign in with your email and password to continue."
     />
   );
 }

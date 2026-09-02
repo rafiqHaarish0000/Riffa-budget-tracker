@@ -2,6 +2,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { GlassAvatar, GlassChip, GlassSection } from '../../components/ui/glass';
+import { NotificationsBell } from '../../components/notifications/NotificationsBell';
 import { ThemedScreen } from '../../components/ui/ThemedScreen';
 import { ThemedText } from '../../components/ui/ThemedText';
 import { BudgetCard } from '../../components/dashboard/BudgetCard';
@@ -114,6 +115,8 @@ export default function HomeScreen() {
     useCallback(() => {
       refetchExpenses();
       refetchSavings();
+      getDailyBudget().then(setBudget);
+      getMonthlyIncome().then(setIncome);
     }, [refetchExpenses, refetchSavings]),
   );
 
@@ -185,14 +188,17 @@ export default function HomeScreen() {
               {dateLabel}
             </ThemedText>
           </View>
-          <Pressable
-            onPress={() => router.push('/profile')}
-            accessibilityRole="button"
-            accessibilityLabel="Open profile"
-            style={({ pressed }) => pressed && styles.pressed}
-          >
-            <GlassAvatar uri={user?.profile_image_url} name={user?.name} size={44} />
-          </Pressable>
+          <View style={styles.headerActions}>
+            <NotificationsBell />
+            <Pressable
+              onPress={() => router.push('/profile')}
+              accessibilityRole="button"
+              accessibilityLabel="Open profile"
+              style={({ pressed }) => pressed && styles.pressed}
+            >
+              <GlassAvatar uri={user?.profile_image_url} name={user?.name} size={44} />
+            </Pressable>
+          </View>
         </View>
       </FadeInView>
 
@@ -264,6 +270,11 @@ const styles = StyleSheet.create({
   },
   headerMeta: {
     flex: 1,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   pressed: {
     opacity: 0.6,

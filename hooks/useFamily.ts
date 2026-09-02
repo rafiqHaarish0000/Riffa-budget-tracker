@@ -83,7 +83,11 @@ export function useFamily(user: User | null): UseFamilyResult {
     if (!user) {
       return { error: new Error('Not authenticated.') };
     }
-    const { error } = await supabase.from('family_members').delete().eq('user_id', user.id);
+    // Use the transactional, RLS-enforced `leave_family` RPC (SECURITY DEFINER
+    // preferred) so membership removal and clearing `users.family_id` happen
+    // atomically. We intentionally do NOT do a raw client-side
+    // family_members delete, which would leave profile state inconsistent.
+    const { error } = await supabase.rpc('leave_family');
     return { error: error ? new Error(error.message) : null };
   }, [user]);
 

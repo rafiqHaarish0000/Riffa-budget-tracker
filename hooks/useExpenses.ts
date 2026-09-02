@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { notifyFamily } from '../lib/notifications';
+import { formatCurrency } from '../utils/format';
 import type { Expense, NewExpenseInput } from '../types/expense';
 
 export type ExpenseDateRange = {
@@ -109,13 +111,29 @@ export function useExpenses(
       if (!familyId || !userId) {
         return { error: new Error('Family not available.') };
       }
-      const { error: insertError } = await supabase.from('expenses').insert({
-        ...input,
-        family_id: familyId,
-        user_id: userId,
-      });
+      const { data, error: insertError } = await supabase
+        .from('expenses')
+        .insert({
+          ...input,
+          family_id: familyId,
+          user_id: userId,
+        })
+        .select('id')
+        .single();
       if (!insertError) {
         await loadExpenses();
+        // Real event: a shared expense is visible to the whole family, so other
+        // members get notified. Personal expenses are never broadcast.
+        if (input.type === 'shared') {
+          const createdId = data?.id ?? null;
+          void notifyFamily({
+            type: 'shared_expense_added',
+            title: 'New shared expense',
+            message: `${formatCurrency(input.amount)} · ${input.category}`,
+            route: createdId ? `/expense/details?id=${createdId}` : null,
+            metadata: { amount: input.amount, category: input.category },
+          });
+        }
       }
       return { error: insertError ? new Error(insertError.message) : null };
     },

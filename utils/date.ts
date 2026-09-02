@@ -88,3 +88,32 @@ export function formatDateLong(value: string): string {
     year: 'numeric',
   });
 }
+
+/**
+ * Compact relative timestamp for notification timestamps: "Just now", "5m",
+ * "2h", "3d", or a short date for anything older.
+ */
+export function formatRelativeTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  if (seconds < 60) {
+    return 'Just now';
+  }
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) {
+    return `${minutes}m`;
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `${hours}h`;
+  }
+  const days = Math.floor(hours / 24);
+  if (days < 7) {
+    return `${days}d`;
+  }
+  return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}

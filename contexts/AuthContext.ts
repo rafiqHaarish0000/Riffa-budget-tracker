@@ -31,12 +31,22 @@ export async function getOnboardingCompleted(): Promise<boolean> {
 }
 
 /**
- * Result of a Sign in with Apple attempt. Consumers surface a clean message
- * based on `status` without leaking technical Supabase / OS errors to the user.
+ * Result of an email/password authentication attempt. Consumers surface a
+ * clean message based on `status` without leaking technical Supabase / OS
+ * errors to the user.
  */
-export type SignInWithAppleResult =
+export type AuthResult =
   | { status: 'success' }
-  | { status: 'cancelled' } // user dismissed the Apple sheet — no error to show
+  | { status: 'error'; message: string };
+
+/**
+ * Result of a sign-up attempt. When Supabase has email confirmation enabled, a
+ * successful `signUp` returns a user but no session; `needsEmailConfirmation`
+ * tells the UI to show a "check your inbox" state rather than pretending the
+ * user is authenticated.
+ */
+export type SignUpResult =
+  | { status: 'success'; needsEmailConfirmation: boolean }
   | { status: 'error'; message: string };
 
 export type AuthContextValue = {
@@ -46,9 +56,10 @@ export type AuthContextValue = {
   session: Session | null;
   /** True until the initial session restore and profile lookup have resolved. */
   loading: boolean;
-  /** True when an Apple sign-in attempt is currently in flight. */
+  /** True when an email/password authentication attempt is currently in flight. */
   signingIn: boolean;
-  signInWithApple: () => Promise<SignInWithAppleResult>;
+  signInWithEmail: (email: string, password: string) => Promise<AuthResult>;
+  signUpWithEmail: (name: string, email: string, password: string) => Promise<SignUpResult>;
   signOut: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
   /**

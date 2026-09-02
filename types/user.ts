@@ -7,7 +7,6 @@ export type User = {
   family_id: string | null;
   created_at: string;
   email?: string | null;
-  apple_user_id?: string | null;
 };
 
 export type AuthSessionUser = SupabaseUser;

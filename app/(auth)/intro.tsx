@@ -1,40 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import { GlassCard } from '../../components/ui/glass';
 import { ThemedScreen } from '../../components/ui/ThemedScreen';
 import { ThemedText } from '../../components/ui/ThemedText';
 import { colors, glass, iconSizes, radius, shadows, spacing } from '../../constants/theme';
-import { useAuth } from '../../hooks/useAuth';
 
 const PEOPLE_SIZE = 92;
 const SAVINGS_SIZE = 64;
 
 export default function IntroScreen() {
-  const { signingIn, signInWithApple } = useAuth();
-  const [notice, setNotice] = useState<string | null>(null);
-
-  async function handleAppleSignIn() {
-    if (signingIn) {
-      return;
-    }
-    setNotice(null);
-
-    const result = await signInWithApple();
-
-    if (result.status === 'cancelled') {
-      // User dismissed the Apple sheet — stay quietly on the intro screen.
-      return;
-    }
-
-    if (result.status === 'error') {
-      setNotice(result.message);
-      return;
-    }
-
-    // Success: the (auth) route guard picks up the new session and routes the
-    // user to Home (existing user) or Create/Join Family (new user).
-  }
+  const router = useRouter();
 
   return (
     <ThemedScreen scroll>
@@ -55,70 +31,36 @@ export default function IntroScreen() {
         Track spending, plan savings, and manage your money as a family.
       </ThemedText>
 
-      {notice ? (
-        <ThemedText variant="caption" color={colors.info} style={styles.notice}>
-          {notice}
-        </ThemedText>
-      ) : null}
-
       <View style={styles.actions}>
-        <AppleButton loading={signingIn} onPress={handleAppleSignIn} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Continue with Email"
+          onPress={() => router.push('/sign-in')}
+          style={({ pressed }) => [styles.primary, pressed && styles.primaryPressed]}
+        >
+          <View style={styles.primaryContent}>
+            <Ionicons name="mail-outline" size={iconSizes.lg} color={colors.textInverse} />
+            <ThemedText variant="bodyMedium" color={colors.textInverse}>
+              Continue with Email
+            </ThemedText>
+          </View>
+        </Pressable>
 
         <Pressable
           accessibilityRole="button"
-          disabled={signingIn}
-          onPress={handleAppleSignIn}
+          onPress={() => router.push('/sign-up')}
           style={({ pressed }) => [styles.secondary, pressed && styles.secondaryPressed]}
         >
           <ThemedText variant="bodyMedium" color={colors.accent}>
-            Already have an account
+            Create account
           </ThemedText>
         </Pressable>
 
         <ThemedText variant="caption" color={colors.textMuted} style={styles.privacy}>
-          Your account is securely connected with Apple.
+          Sign in with your email to access your family&apos;s shared money space.
         </ThemedText>
       </View>
     </ThemedScreen>
-  );
-}
-
-type AppleButtonProps = {
-  loading: boolean;
-  onPress: () => void;
-};
-
-function AppleButton({ loading, onPress }: AppleButtonProps) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Continue with Apple"
-      disabled={loading}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.appleButton,
-        pressed && styles.appleButtonPressed,
-        loading && styles.appleButtonDisabled,
-      ]}
-    >
-      <View style={styles.appleButtonContent}>
-        {loading ? (
-          <>
-            <ActivityIndicator size="small" color={colors.textInverse} />
-            <ThemedText variant="bodyMedium" color={colors.textInverse}>
-              Connecting…
-            </ThemedText>
-          </>
-        ) : (
-          <>
-            <Ionicons name="logo-apple" size={iconSizes.lg} color={colors.textInverse} />
-            <ThemedText variant="bodyMedium" color={colors.textInverse}>
-              Continue with Apple
-            </ThemedText>
-          </>
-        )}
-      </View>
-    </Pressable>
   );
 }
 
@@ -249,16 +191,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     marginBottom: spacing.xl,
   },
-  notice: {
-    textAlign: 'center',
-    marginBottom: spacing.xl,
-    paddingHorizontal: spacing.lg,
-  },
   actions: {
     marginTop: 'auto',
     paddingTop: spacing.lg,
   },
-  appleButton: {
+  primary: {
     minHeight: 52,
     borderRadius: radius.md,
     backgroundColor: colors.text,
@@ -267,17 +204,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     ...shadows.subtle,
   },
-  appleButtonContent: {
+  primaryContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
   },
-  appleButtonPressed: {
+  primaryPressed: {
     opacity: 0.85,
-  },
-  appleButtonDisabled: {
-    opacity: 0.6,
   },
   secondary: {
     minHeight: 44,

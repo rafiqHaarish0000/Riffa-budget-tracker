@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { notifyFamily } from '../lib/notifications';
+import { formatCurrency } from '../utils/format';
 import type {
   NewSavingsContributionInput,
   NewSavingsGoalInput,
@@ -105,7 +107,7 @@ export function useSavings(familyId: string | null, userId: string | null): UseS
       // here rather than computed ad hoc in the screen.
       const { data: goalData, error: goalError } = await supabase
         .from('savings_goals')
-        .select('current_amount')
+        .select('current_amount, name')
         .eq('id', input.goal_id)
         .maybeSingle();
 
@@ -130,6 +132,15 @@ export function useSavings(familyId: string | null, userId: string | null): UseS
 
       if (!updateError) {
         await loadGoals();
+        // Real event: savings goals are family-scoped, so other members get
+        // notified about the contribution.
+        void notifyFamily({
+          type: 'savings_contribution_added',
+          title: 'Savings contribution',
+          message: `${formatCurrency(input.amount)} added to ${goalData?.name ?? 'a goal'}`,
+          route: `/savings/details?id=${input.goal_id}`,
+          metadata: { amount: input.amount, goal_id: input.goal_id },
+        });
       }
       return { error: updateError ? new Error(updateError.message) : null };
     },
