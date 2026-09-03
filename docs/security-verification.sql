@@ -17,6 +17,7 @@ where relname in (
   'families',
   'family_members',
   'expenses',
+  'expense_payments',
   'savings_goals',
   'savings_contributions',
   'notifications',
@@ -50,6 +51,7 @@ where c.relname in (
   'families',
   'family_members',
   'expenses',
+  'expense_payments',
   'savings_goals',
   'savings_contributions',
   'notifications',
@@ -76,6 +78,8 @@ and p.proname in (
   'join_family',
   'leave_family',
   'add_savings_contribution',
+  'create_expense_with_payments',
+  'update_expense_with_payments',
   'notify_family',
   'notify_shared_expense',
   'notify_savings_contribution',
@@ -111,6 +115,8 @@ and p.proname in (
   'join_family',
   'leave_family',
   'add_savings_contribution',
+  'create_expense_with_payments',
+  'update_expense_with_payments',
   'notify_family',
   'notify_shared_expense',
   'notify_savings_contribution',
@@ -178,6 +184,7 @@ select
   pg_get_constraintdef(oid) as definition
 from pg_constraint
 where conrelid = 'public.expenses'::regclass
+   or conrelid = 'public.expense_payments'::regclass
    or conrelid = 'public.savings_goals'::regclass
    or conrelid = 'public.savings_contributions'::regclass
    or conrelid = 'public.notifications'::regclass;

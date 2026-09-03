@@ -10,7 +10,11 @@ import { CategoryIcon } from '../../components/dashboard/CategoryIcon';
 import { AmountInput, parseAmount } from '../../components/expense/AmountInput';
 import { CategorySelector } from '../../components/expense/CategorySelector';
 import { DateField } from '../../components/expense/DateField';
-import { PaidBySelector, type PayerOption } from '../../components/expense/PaidBySelector';
+import {
+  PaymentSplitSelector,
+  type PaymentSplitState,
+  type SplitValidation,
+} from '../../components/expense/PaymentSplitSelector';
 import { TypeSelector } from '../../components/expense/TypeSelector';
 import { GlassButton, GlassCard, GlassInput, GlassModal, GlassSection } from '../../components/ui/glass';
 import { ThemedScreen } from '../../components/ui/ThemedScreen';
@@ -27,7 +31,7 @@ import {
   CONFIG_ERROR,
   mapActionError,
 } from '../../utils/errors';
-import type { ExpenseCategory, ExpenseType } from '../../types/expense';
+import type { ExpenseAllocation, ExpenseCategory, ExpenseType } from '../../types/expense';
 
 const MIN_SUBMIT_VISIBLE_MS = 350;
 
@@ -35,7 +39,7 @@ export default function ExpenseDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const { members } = useFamily(user);
-  const { expense, getExpense, updateExpense, deleteExpense } = useExpenses(
+  const { expense, expensePayments, getExpense, updateExpense, deleteExpense } = useExpenses(
     user?.family_id ?? null,
     user?.id ?? null,
   );
@@ -50,10 +54,18 @@ export default function ExpenseDetailsScreen() {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<ExpenseCategory | null>(null);
   const [type, setType] = useState<ExpenseType>('personal');
-  const [paidBy, setPaidBy] = useState('');
   const [date, setDate] = useState('');
   const [note, setNote] = useState('');
   const [touched, setTouched] = useState(false);
+
+  // Shared expense edit split state, reported by PaymentSplitSelector.
+  const [editAllocations, setEditAllocations] = useState<ExpenseAllocation[]>([]);
+  const [splitValidation, setSplitValidation] = useState<SplitValidation>({
+    total: 0,
+    remaining: 0,
+    valid: false,
+    over: false,
+  });
 
   const loadExpense = useCallback(async () => {
     if (!id) {
@@ -79,30 +91,45 @@ export default function ExpenseDetailsScreen() {
       setAmount(String(expense.amount));
       setCategory(expense.category as ExpenseCategory);
       setType(expense.type);
-      setPaidBy(expense.paid_by);
       setDate(expense.date);
       setNote(expense.note ?? '');
       setTouched(false);
       setError(null);
+      // Reset edit-split state so the split selector reseeds when opening edit.
+      setEditAllocations(
+        expense.type === 'shared'
+          ? (expensePayments ?? []).map((p) => ({ user_id: p.user_id, amount: p.amount }))
+          : [],
+      );
+      setSplitValidation({ total: 0, remaining: 0, valid: false, over: false });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expense, editing]);
 
-  const paidByMember = useMemo(
-    () => members.find((m) => m.user_id === paidBy) ?? null,
-    [members, paidBy],
-  );
-
-  const partner = useMemo(
-    () => members.find((m) => m.user_id !== user?.id) ?? null,
-    [members, user?.id],
-  );
-
-  const partnerOption = useMemo<PayerOption | null>(
-    () => (partner ? { id: partner.id, label: partner.user?.name ?? 'Partner' } : null),
-    [partner],
-  );
-
   const canEdit = expense?.user_id === user?.id;
+
+  /**
+   * Read-mode "Paid by" breakdown. Uses the real per-payer allocations when
+   * present; falls back to the legacy `paid_by` single payer for older rows
+   * that predate the split migration. Personal expenses show the owner only.
+   */
+  const paymentRows = useMemo(() => {
+    if (!expense) {
+      return [];
+    }
+    if (expensePayments.length > 0) {
+      return expensePayments.map((p) => {
+        const member = members.find((m) => m.user_id === p.user_id);
+        const label = p.user_id === user?.id ? 'You' : (member?.user?.name?.trim() ?? 'Member');
+        return { label, amount: p.amount };
+      });
+    }
+    // Legacy fallback: single payer from paid_by.
+    const member = members.find((m) => m.user_id === expense.paid_by);
+    const label =
+      expense.paid_by === user?.id ? 'You' : (member?.user?.name?.trim() ?? 'Member');
+    return [{ label, amount: expense.amount }];
+  }, [expense, expensePayments, members, user?.id]);
 
   const amountNumber = parseAmount(amount);
   const amountHasText = amount.trim().length > 0;
@@ -110,7 +137,16 @@ export default function ExpenseDetailsScreen() {
   const showAmountError = amountInvalid || (touched && !amountHasText);
   const showCategoryError = touched && !category;
 
-  const canSave = amountHasText && amountNumber !== null && amountNumber > 0 && category !== null;
+  // Shared edits require the split to exactly match the total.
+  const splitValid = type === 'shared' ? splitValidation.valid : true;
+
+  const canSave =
+    amountHasText && amountNumber !== null && amountNumber > 0 && category !== null && splitValid;
+
+  function handleSplitChange(state: PaymentSplitState) {
+    setEditAllocations(state.allocations);
+    setSplitValidation(state.validation);
+  }
 
   async function handleSave() {
     if (submitting || !id || !expense) {
@@ -124,6 +160,27 @@ export default function ExpenseDetailsScreen() {
     if (!category) {
       setError('Please select a category.');
       return;
+    }
+
+    // Build payments for the atomic update.
+    let payments: ExpenseAllocation[];
+    if (type === 'personal') {
+      payments = [{ user_id: user?.id ?? '', amount: parsedAmount }];
+    } else {
+      payments = editAllocations;
+      if (payments.length === 0) {
+        setError('Add at least one payer with a positive amount.');
+        return;
+      }
+      const total = payments.reduce((acc, p) => acc + p.amount, 0);
+      if (Math.round(total * 100) !== Math.round(parsedAmount * 100)) {
+        setError(
+          total < parsedAmount
+            ? `Payment split is ${formatRupee(parsedAmount - total)} short.`
+            : `Payment split exceeds the expense by ${formatRupee(total - parsedAmount)}.`,
+        );
+        return;
+      }
     }
 
     setError(null);
@@ -143,9 +200,9 @@ export default function ExpenseDetailsScreen() {
         amount: parsedAmount,
         category,
         type,
-        paid_by: type === 'personal' ? user.id : (paidBy || user.id),
         date,
-        ...(trimmedNote ? { note: trimmedNote } : {}),
+        note: trimmedNote ? trimmedNote : undefined,
+        payments,
       });
       saveError = dbError ? mapActionError(dbError) : null;
     }
@@ -240,12 +297,27 @@ export default function ExpenseDetailsScreen() {
 
           <FadeInView delay={120} style={styles.section}>
             <GlassSection title="Details">
-              <View style={styles.row}>
-                <ThemedText variant="body" color={colors.textSecondary}>Paid by</ThemedText>
-                <ThemedText variant="body" color={colors.text}>
-                  {paidByMember ? (paidByMember.user?.name ?? 'Partner') : 'Partner'}
-                </ThemedText>
-              </View>
+              {paymentRows.length > 0 ? (
+                <View style={styles.row}>
+                  <View style={styles.payersLabel}>
+                    <ThemedText variant="body" color={colors.textSecondary} style={styles.payColumn}>
+                      {paymentRows.length === 1 ? 'Paid by' : 'Paid by'}
+                    </ThemedText>
+                    <View style={styles.payerList}>
+                      {paymentRows.map((payer, index) => (
+                        <View key={`${payer.label}-${index}`} style={styles.payerRowInner}>
+                          <ThemedText variant="body" color={colors.text} numberOfLines={1}>
+                            {payer.label}
+                          </ThemedText>
+                          <ThemedText variant="body" color={colors.text}>
+                            {formatCurrency(payer.amount)}
+                          </ThemedText>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                </View>
+              ) : null}
               <View style={styles.row}>
                 <ThemedText variant="body" color={colors.textSecondary}>Date</ThemedText>
                 <ThemedText variant="body" color={colors.text}>
@@ -342,12 +414,14 @@ export default function ExpenseDetailsScreen() {
               <ThemedText variant="label" color={colors.textSecondary} style={styles.label}>
                 Paid by
               </ThemedText>
-              <PaidBySelector
-                type={type}
-                payerId={paidBy}
-                userId={user?.id ?? null}
-                partner={partnerOption}
-                onSelect={(id) => { setPaidBy(id); setTouched(true); setError(null); }}
+              <PaymentSplitSelector
+                key={`edit-split-${expense.id}-${editing}`}
+                type="shared"
+                expenseTotal={amountNumber ?? 0}
+                currentUserId={user?.id ?? null}
+                members={members}
+                initial={editAllocations}
+                onChange={handleSplitChange}
               />
             </FadeInView>
           ) : null}
@@ -442,6 +516,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
+  payersLabel: {
+    flex: 1,
+  },
+  payColumn: {
+    marginBottom: spacing.xs,
+  },
+  payerList: {
+    gap: spacing.xs,
+  },
+  payerRowInner: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   label: {
     marginBottom: spacing.sm,
     marginLeft: spacing.xs,
@@ -484,3 +572,7 @@ const styles = StyleSheet.create({
     minWidth: 100,
   },
 });
+
+function formatRupee(amount: number): string {
+  return `₹${Math.abs(amount).toLocaleString('en-IN')}`;
+}

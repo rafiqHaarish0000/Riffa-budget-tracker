@@ -3,13 +3,14 @@ import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { CategoryIcon } from '../../components/dashboard/CategoryIcon';
 import { FadeInView } from '../../components/dashboard/FadeInView';
-import { GlassCard, GlassChip, GlassSection } from '../../components/ui/glass';
+import { GlassCard, GlassChip, GlassSection, GlassAvatar } from '../../components/ui/glass';
 import { ScreenState, ScreenStateSkeleton } from '../../components/ui/ScreenState';
 import { ThemedScreen } from '../../components/ui/ThemedScreen';
 import { ThemedText } from '../../components/ui/ThemedText';
 import { colors, iconSizes, radius, spacing } from '../../constants/theme';
 import { useAuth } from '../../hooks/useAuth';
 import { useExpenses, type ExpenseDateRange } from '../../hooks/useExpenses';
+import { useFamily } from '../../hooks/useFamily';
 import { formatDateLabel, toISODate } from '../../utils/date';
 import { formatCurrency, sumExpenses } from '../../utils/format';
 import type { ExpenseCategory } from '../../types/expense';
@@ -86,11 +87,13 @@ export default function ReportsScreen() {
 
   const dateRange = useMemo(() => periodRange(period), [period]);
 
-  const { expenses, loading, error, refetch } = useExpenses(
+  const { expenses, paymentsByExpense, loading, error, refetch } = useExpenses(
     user?.family_id ?? null,
     user?.id ?? null,
     dateRange,
   );
+
+  const { members } = useFamily(user);
 
   useFocusEffect(
     useCallback(() => {
@@ -144,6 +147,42 @@ export default function ReportsScreen() {
     () => sumExpenses(periodExpenses.filter((e) => e.type === 'shared')),
     [periodExpenses],
   );
+
+  /**
+   * "Who Paid" breakdown. Every rupee is attributed exactly once: personal
+   * expenses go to their owner; shared expenses are split by expense_payments
+   * when available, falling back to the legacy single paid_by for older rows.
+   * Because we tie every allocation to the matching expense amount (never
+   * counting an expense twice), the payer totals always sum to `total`.
+   */
+  const byPayer = useMemo(() => {
+    const amounts = new Map<string, number>();
+    for (const expense of periodExpenses) {
+      const payments = paymentsByExpense?.[expense.id];
+      if (payments && payments.length > 0) {
+        for (const p of payments) {
+          amounts.set(p.user_id, (amounts.get(p.user_id) ?? 0) + (p.amount ?? 0));
+        }
+      } else {
+        const owner = expense.paid_by || expense.user_id;
+        amounts.set(owner, (amounts.get(owner) ?? 0) + (expense.amount ?? 0));
+      }
+    }
+    return [...amounts.entries()]
+      .map(([user_id, amount]) => {
+        const member = members.find((m) => m.user_id === user_id);
+        const name = member?.user?.name?.trim() ?? 'Member';
+        const label = user_id === user?.id ? 'You' : name;
+        return {
+          user_id,
+          label,
+          amount,
+          avatarUri: user_id === user?.id ? (user?.profile_image_url ?? null) : (member?.user?.profile_image_url ?? null),
+          avatarName: user_id === user?.id ? (user?.name ?? 'You') : name,
+        };
+      })
+      .sort((a, b) => b.amount - a.amount);
+  }, [periodExpenses, paymentsByExpense, members, user?.id]);
 
   const trend = useMemo(() => {
     if (period === 'year') {
@@ -326,6 +365,53 @@ export default function ReportsScreen() {
                           </View>
                           <ThemedText variant="caption" color={colors.textMuted}>
                             {Number.isFinite(normalized) ? `${Math.round(normalized)}%` : '0%'}
+                          </ThemedText>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
+              </GlassCard>
+            </FadeInView>
+          </GlassSection>
+
+          <GlassSection title="Who paid">
+            <FadeInView delay={140}>
+              <GlassCard>
+                {byPayer.map((item, index) => {
+                  const normalized = total > 0 ? (item.amount / total) * 100 : 0;
+                  const percent = Number.isFinite(normalized) ? Math.max(0, Math.min(100, normalized)) : 0;
+                  return (
+                    <View key={item.user_id}>
+                      {index > 0 ? <View style={styles.divider} /> : null}
+                      <View style={styles.categoryRow}>
+                        <GlassAvatar
+                          uri={item.avatarUri}
+                          name={item.avatarName}
+                          size={36}
+                        />
+                        <View style={styles.categoryMeta}>
+                          <View style={styles.categoryLine}>
+                            <ThemedText variant="bodyMedium" color={colors.text} numberOfLines={1}>
+                              {item.label}
+                            </ThemedText>
+                            <ThemedText variant="bodyMedium" color={colors.text}>
+                              {formatCurrency(item.amount)}
+                            </ThemedText>
+                          </View>
+                          <View style={styles.barTrack}>
+                            <View
+                              style={[
+                                styles.barFill,
+                                {
+                                  backgroundColor: item.label === 'You' ? colors.accent : colors.accentStrong,
+                                  width: `${Math.round(percent)}%`,
+                                },
+                              ]}
+                            />
+                          </View>
+                          <ThemedText variant="caption" color={colors.textMuted}>
+                            {Math.round(percent)}%
                           </ThemedText>
                         </View>
                       </View>

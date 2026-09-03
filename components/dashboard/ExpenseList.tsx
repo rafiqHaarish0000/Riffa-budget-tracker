@@ -1,19 +1,33 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { colors, iconSizes, radius, spacing } from '../../constants/theme';
-import type { Expense } from '../../types/expense';
+import type { Expense, ExpensePayment } from '../../types/expense';
 import { formatCurrency } from '../../utils/format';
 import { GlassButton, GlassCard } from '../ui/glass';
 import { ThemedText } from '../ui/ThemedText';
 import { CategoryIcon } from './CategoryIcon';
+import type { FamilyMember } from '../../types/family';
 
 type ExpenseListProps = {
   expenses: Expense[];
   onPressExpense: (id: string) => void;
   onAddExpense?: () => void;
+  /** Payment allocations grouped by expense_id (from useExpenses), if available. */
+  paymentsByExpense?: Record<string, ExpensePayment[]>;
+  /** Family members, used to label the secondary "Paid by" line. */
+  members?: FamilyMember[];
+  /** The authenticated user's id, to label "You" in the payer line. */
+  currentUserId?: string | null;
 };
 
-export function ExpenseList({ expenses, onPressExpense, onAddExpense }: ExpenseListProps) {
+export function ExpenseList({
+  expenses,
+  onPressExpense,
+  onAddExpense,
+  paymentsByExpense,
+  members = [],
+  currentUserId = null,
+}: ExpenseListProps) {
   if (expenses.length === 0) {
     return <EmptyExpenses onAddExpense={onAddExpense} />;
   }
@@ -23,19 +37,34 @@ export function ExpenseList({ expenses, onPressExpense, onAddExpense }: ExpenseL
       {expenses.map((expense, index) => (
         <View key={expense.id}>
           {index > 0 ? <View style={styles.divider} /> : null}
-          <ExpenseRow expense={expense} onPress={() => onPressExpense(expense.id)} />
+          <ExpenseRow
+            expense={expense}
+            onPress={() => onPressExpense(expense.id)}
+            payers={paymentsByExpense?.[expense.id]}
+            members={members}
+            currentUserId={currentUserId}
+          />
         </View>
       ))}
     </GlassCard>
   );
 }
 
-function ExpenseRow({ expense, onPress }: { expense: Expense; onPress: () => void }) {
+type ExpenseRowProps = {
+  expense: Expense;
+  onPress: () => void;
+  payers?: ExpensePayment[];
+  members?: FamilyMember[];
+  currentUserId?: string | null;
+};
+
+function ExpenseRow({ expense, onPress, payers, members = [], currentUserId = null }: ExpenseRowProps) {
+  const payerLabel = payerSummary(expense, payers, members, currentUserId);
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${expense.category}, ${formatCurrency(expense.amount)}`}
+      accessibilityLabel={`${expense.category}, ${formatCurrency(expense.amount)}${payerLabel ? `, ${payerLabel}` : ''}`}
       style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
     >
       <CategoryIcon category={expense.category} />
@@ -43,8 +72,8 @@ function ExpenseRow({ expense, onPress }: { expense: Expense; onPress: () => voi
         <ThemedText variant="bodyMedium" color={colors.text} numberOfLines={1}>
           {expense.category}
         </ThemedText>
-        <ThemedText variant="caption" color={colors.textMuted}>
-          {formatExpenseTime(expense)}
+        <ThemedText variant="caption" color={colors.textMuted} numberOfLines={1}>
+          {payerLabel ? `${payerLabel} · ${formatExpenseTime(expense)}` : formatExpenseTime(expense)}
         </ThemedText>
       </View>
       <ThemedText variant="bodyMedium" color={colors.text}>
@@ -52,6 +81,35 @@ function ExpenseRow({ expense, onPress }: { expense: Expense; onPress: () => voi
       </ThemedText>
     </Pressable>
   );
+}
+
+function payerSummary(
+  expense: Expense,
+  payers: ExpensePayment[] | undefined,
+  members: FamilyMember[],
+  currentUserId: string | null,
+): string {
+  if (expense.type === 'personal') {
+    return '';
+  }
+  const rows = payers && payers.length > 0 ? payers : [];
+  if (rows.length === 0) {
+    // Legacy: single payer from paid_by.
+    const member = members.find((m) => m.user_id === expense.paid_by);
+    const label = expense.paid_by === currentUserId ? 'You' : (member?.user?.name?.trim() ?? 'Member');
+    return `Paid by ${label}`;
+  }
+  const names = rows.map((p) => {
+    if (p.user_id === currentUserId) {
+      return 'You';
+    }
+    const member = members.find((m) => m.user_id === p.user_id);
+    return member?.user?.name?.trim() ?? 'Member';
+  });
+  if (names.length === 1) {
+    return `Paid by ${names[0]}`;
+  }
+  return `Paid by ${names.join(' + ')}`;
 }
 
 function EmptyExpenses({ onAddExpense }: { onAddExpense?: () => void }) {

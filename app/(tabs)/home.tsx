@@ -58,6 +58,7 @@ export default function HomeScreen() {
   } = useFamily(user);
   const {
     expenses,
+    paymentsByExpense,
     loading: expensesLoading,
     error: expensesError,
     refetch: refetchExpenses,
@@ -261,6 +262,9 @@ export default function HomeScreen() {
                   router.push({ pathname: '/expense/details', params: { id } })
                 }
                 onAddExpense={() => router.push('/expense/add')}
+                paymentsByExpense={paymentsByExpense}
+                members={members}
+                currentUserId={user?.id ?? null}
               />
             )}
           </View>

@@ -11,6 +11,7 @@ import { ScreenState, ScreenStateSkeleton } from '../../components/ui/ScreenStat
 import { colors, iconSizes, radius, spacing } from '../../constants/theme';
 import { useAuth } from '../../hooks/useAuth';
 import { useExpenses, type ExpenseDateRange } from '../../hooks/useExpenses';
+import { useFamily } from '../../hooks/useFamily';
 import { addMonths, formatDateLong, isSameDay, monthGrid, startOfMonth, toISODate } from '../../utils/date';
 import { formatCurrency, sumExpenses } from '../../utils/format';
 import type { Expense } from '../../types/expense';
@@ -50,11 +51,13 @@ export default function CalendarScreen() {
     [viewMonth],
   );
 
-  const { expenses, loading, error, refetch } = useExpenses(
+  const { expenses, paymentsByExpense, loading, error, refetch } = useExpenses(
     user?.family_id ?? null,
     user?.id ?? null,
     dateRange,
   );
+
+  const { members } = useFamily(user);
 
   useFocusEffect(
     useCallback(() => {
@@ -303,6 +306,9 @@ export default function CalendarScreen() {
         <ExpenseList
           expenses={selectedExpenses}
           onPressExpense={(id) => router.push({ pathname: '/expense/details', params: { id } })}
+          paymentsByExpense={paymentsByExpense}
+          members={members}
+          currentUserId={user?.id ?? null}
         />
       )}
     </ThemedScreen>

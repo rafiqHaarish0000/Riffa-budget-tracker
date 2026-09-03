@@ -1,6 +1,6 @@
 import type { User, AuthSessionUser } from './user';
 import type { Family, FamilyMember } from './family';
-import type { Expense } from './expense';
+import type { Expense, ExpensePayment } from './expense';
 import type { SavingsGoal, SavingsContribution } from './savings';
 import type { AppNotification } from './notification';
 
@@ -18,6 +18,9 @@ export type Database = {
       };
       expenses: {
         Row: Expense;
+      };
+      expense_payments: {
+        Row: ExpensePayment;
       };
       savings_goals: {
         Row: SavingsGoal;
@@ -38,6 +41,7 @@ export type {
   Family,
   FamilyMember,
   Expense,
+  ExpensePayment,
   SavingsGoal,
   SavingsContribution,
   AppNotification,
