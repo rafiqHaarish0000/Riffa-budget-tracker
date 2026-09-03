@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
   Platform,
   Pressable,
@@ -9,7 +10,7 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
-import { colors, radius, shadows, spacing, typography } from '../../../constants/theme';
+import { colors, iconSizes, radius, shadows, spacing, typography } from '../../../constants/theme';
 import { ThemedText } from '../ThemedText';
 
 type GlassInputProps = TextInputProps & {
@@ -36,7 +37,7 @@ export function GlassInput({
   return (
     <View style={[styles.container, style]}>
       {label ? (
-        <ThemedText variant="label" color={colors.textSecondary}>
+        <ThemedText variant="label" color={colors.textSecondary} style={styles.label}>
           {label}
         </ThemedText>
       ) : null}
@@ -67,7 +68,11 @@ export function GlassInput({
             hitSlop={8}
             style={styles.toggle}
           >
-            <ThemedText variant="captionBold" color={colors.accent}>{hidden ? 'Show' : 'Hide'}</ThemedText>
+            <Ionicons
+              name={hidden ? 'eye-outline' : 'eye-off-outline'}
+              size={iconSizes.md}
+              color={colors.accent}
+            />
           </Pressable>
         ) : null}
       </View>
@@ -78,6 +83,10 @@ export function GlassInput({
 const styles = StyleSheet.create({
   container: {
     marginBottom: spacing.lg,
+  },
+  label: {
+    marginBottom: spacing.sm,
+    marginLeft: spacing.xs,
   },
   field: {
     flexDirection: 'row',
@@ -104,6 +113,9 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as unknown as TextStyle) : null),
   },
   toggle: {
-    paddingLeft: spacing.md,
+    width: 36,
+    minHeight: 44,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
   },
 });

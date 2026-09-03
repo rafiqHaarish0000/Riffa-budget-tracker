@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { FadeInView } from '../../components/dashboard/FadeInView';
 import { AmountInput, parseAmount } from '../../components/expense/AmountInput';
 import { CategorySelector } from '../../components/expense/CategorySelector';
@@ -11,10 +12,11 @@ import {
   type SplitValidation,
 } from '../../components/expense/PaymentSplitSelector';
 import { TypeSelector } from '../../components/expense/TypeSelector';
-import { GlassButton, GlassInput } from '../../components/ui/glass';
+import { ScreenState, ScreenStateSkeleton } from '../../components/ui/ScreenState';
+import { GlassAvatar, GlassButton, GlassInput } from '../../components/ui/glass';
 import { ThemedScreen } from '../../components/ui/ThemedScreen';
 import { ThemedText } from '../../components/ui/ThemedText';
-import { colors, spacing } from '../../constants/theme';
+import { colors, iconSizes, radius, spacing } from '../../constants/theme';
 import { useAuth } from '../../hooks/useAuth';
 import { useExpenses } from '../../hooks/useExpenses';
 import { useFamily } from '../../hooks/useFamily';
@@ -33,7 +35,7 @@ const DEFAULT_VALIDATION: SplitValidation = { total: 0, remaining: 0, valid: fal
 
 export default function AddExpenseScreen() {
   const { user } = useAuth();
-  const { members } = useFamily(user);
+  const { members, loading: familyLoading, error: familyError, refetch: refetchFamily } = useFamily(user);
   const { addExpense } = useExpenses(user?.family_id ?? null, user?.id ?? null);
 
   const [amount, setAmount] = useState('');
@@ -154,16 +156,58 @@ export default function AddExpenseScreen() {
       setError(saveError);
       return;
     }
-    router.back();
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/home');
+    }
   }
 
   return (
-    <ThemedScreen scroll>
-      <ThemedText variant="caption" color={colors.textMuted} style={styles.supporting}>
-        Keep your shared money space up to date.
-      </ThemedText>
+    <ThemedScreen scroll contentContainerStyle={styles.screenContent}>
+      <FadeInView delay={0}>
+        <View style={styles.titleRow}>
+          <Pressable
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            hitSlop={8}
+            style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
+          >
+            <Ionicons name="chevron-back" size={iconSizes.md} color={colors.text} />
+          </Pressable>
+          <ThemedText variant="heading" color={colors.text} style={styles.title}>
+            Add Expense
+          </ThemedText>
+          <Pressable
+            onPress={() => router.push('/profile')}
+            accessibilityRole="button"
+            accessibilityLabel="Open profile"
+            style={({ pressed }) => pressed && styles.backButtonPressed}
+          >
+            <GlassAvatar uri={user?.profile_image_url} name={user?.name} size={44} />
+          </Pressable>
+        </View>
 
-      <FadeInView delay={0} style={styles.section}>
+        <View style={styles.header}>
+          <View style={styles.heroWrap}>
+            <Image
+              source={{
+                uri: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=900&q=85',
+              }}
+              style={styles.heroImage}
+              resizeMode="cover"
+            />
+            <View style={styles.heroShade} />
+          </View>
+          <ThemedText variant="body" color={colors.textSecondary} style={styles.intro}>
+            Log what you spent and split shared costs with your family in one place —
+            so your budget stays clear, fair, and always in sync.
+          </ThemedText>
+        </View>
+      </FadeInView>
+
+      <FadeInView delay={60} style={styles.section}>
         <AmountInput
           value={amount}
           onChangeText={(v) => { setAmount(v); setTouched(true); setError(null); }}
@@ -175,10 +219,15 @@ export default function AddExpenseScreen() {
         ) : null}
       </FadeInView>
 
-      <FadeInView delay={60} style={styles.section}>
-        <ThemedText variant="label" color={colors.textSecondary} style={styles.label}>
-          Category
-        </ThemedText>
+      <FadeInView delay={120} style={styles.section}>
+        <View style={styles.labelRow}>
+          <View style={styles.labelIcon}>
+            <Ionicons name="grid-outline" size={14} color={colors.accent} />
+          </View>
+          <ThemedText variant="label" color={colors.textSecondary} style={styles.sectionLabel}>
+            Category
+          </ThemedText>
+        </View>
         <CategorySelector
           selected={category}
           onSelect={(c) => { setCategory(c); setTouched(true); setError(null); }}
@@ -190,34 +239,67 @@ export default function AddExpenseScreen() {
         ) : null}
       </FadeInView>
 
-      <FadeInView delay={120} style={styles.section}>
-        <ThemedText variant="label" color={colors.textSecondary} style={styles.label}>
-          Type
-        </ThemedText>
+      <FadeInView delay={180} style={styles.section}>
+        <View style={styles.labelRow}>
+          <View style={styles.labelIcon}>
+            <Ionicons name="people-outline" size={14} color={colors.accent} />
+          </View>
+          <ThemedText variant="label" color={colors.textSecondary} style={styles.sectionLabel}>
+            Type
+          </ThemedText>
+        </View>
         <TypeSelector value={type} onChange={handleTypeChange} />
       </FadeInView>
 
       {type === 'shared' ? (
-        <FadeInView delay={180} style={styles.section}>
-          <ThemedText variant="label" color={colors.textSecondary} style={styles.label}>
-            Paid by
-          </ThemedText>
-          <PaymentSplitSelector
-            key={`shared-${splitKey}`}
-            type="shared"
-            expenseTotal={amountNumber ?? 0}
-            currentUserId={user?.id ?? null}
-            members={members}
-            onChange={handleSplitChange}
-          />
+        <FadeInView delay={240} style={styles.section}>
+          <View style={styles.labelRow}>
+            <View style={styles.labelIcon}>
+              <Ionicons name="wallet-outline" size={14} color={colors.accent} />
+            </View>
+            <ThemedText variant="label" color={colors.textSecondary} style={styles.sectionLabel}>
+              Paid by
+            </ThemedText>
+          </View>
+          {familyLoading ? (
+            <ScreenStateSkeleton rows={2} />
+          ) : familyError ? (
+            <ScreenState
+              compact
+              kind="error"
+              icon="people-outline"
+              title="Couldn't load family members"
+              message="We couldn't fetch your family to split this expense."
+              actionLabel="Try again"
+              actionVariant="secondary"
+              onAction={() => refetchFamily()}
+            />
+          ) : !members.some((m) => m.user_id != null) ? (
+            <ScreenState
+              compact
+              kind="empty"
+              icon="people-outline"
+              title="No family members yet"
+              message="Join your family before recording a shared expense."
+            />
+          ) : (
+            <PaymentSplitSelector
+              key={`shared-${splitKey}`}
+              type="shared"
+              expenseTotal={amountNumber ?? 0}
+              currentUserId={user?.id ?? null}
+              members={members}
+              onChange={handleSplitChange}
+            />
+          )}
         </FadeInView>
       ) : null}
 
-      <FadeInView delay={240} style={styles.section}>
+      <FadeInView delay={300} style={styles.section}>
         <DateField value={date} onChange={(v) => { setDate(v); setTouched(true); setError(null); }} />
       </FadeInView>
 
-      <FadeInView delay={300} style={styles.section}>
+      <FadeInView delay={360} style={styles.section}>
         <GlassInput
           label="Note (optional)"
           placeholder="What was this for?"
@@ -227,22 +309,27 @@ export default function AddExpenseScreen() {
           editable={!submitting}
           returnKeyType="done"
           accessibilityLabel="Note"
+          inputStyle={styles.noteInput}
         />
       </FadeInView>
 
       {error ? (
-        <ThemedText variant="caption" color={colors.danger} style={styles.submitError}>
-          {error}
-        </ThemedText>
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle" size={16} color={colors.danger} />
+          <ThemedText variant="caption" color={colors.danger} style={styles.submitError}>
+            {error}
+          </ThemedText>
+        </View>
       ) : null}
 
       <View style={styles.footer}>
         <GlassButton
-          title="Add expense"
+          title="Save expense"
           loading={submitting}
-          loadingTitle="Adding…"
+          loadingTitle="Saving…"
           disabled={!canSave}
           onPress={handleSave}
+          leading={<Ionicons name="checkmark-circle-outline" size={iconSizes.md} color={colors.textInverse} />}
         />
       </View>
     </ThemedScreen>
@@ -254,12 +341,85 @@ function formatRupee(amount: number): string {
 }
 
 const styles = StyleSheet.create({
-  supporting: {
-    textAlign: 'center',
+  screenContent: {
+    paddingBottom: spacing.massive + 24,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+  },
+  backButtonPressed: {
+    opacity: 0.7,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: spacing.xl,
   },
-  section: {
+  title: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    pointerEvents: 'none',
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: spacing.xxl,
+  },
+  heroWrap: {
+    width: '100%',
+    height: 160,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
     marginBottom: spacing.xl,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
+  },
+  heroImage: {
+    ...StyleSheet.absoluteFill,
+  },
+  heroShade: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(7, 30, 24, 0.30)',
+  },
+  intro: {
+    textAlign: 'center',
+    lineHeight: 22,
+    maxWidth: 340,
+  },
+  section: {
+    marginBottom: spacing.xxl,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+    marginLeft: spacing.xs,
+  },
+  sectionLabel: {
+    fontSize: 14,
+  },
+  labelIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: radius.sm,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   label: {
     marginBottom: spacing.sm,
@@ -269,9 +429,22 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     marginLeft: spacing.xs,
   },
+  noteInput: {
+    minHeight: 56,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    padding: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(255, 130, 145, 0.08)',
+  },
   submitError: {
     textAlign: 'center',
-    marginBottom: spacing.md,
+    flexShrink: 1,
   },
   footer: {
     paddingBottom: spacing.md,

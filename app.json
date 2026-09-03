@@ -7,11 +7,11 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "rifaa",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/riffa-logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#F5F6F4"
+      "backgroundColor": "#0B201B"
     },
     "ios": {
       "supportsTablet": false,
@@ -24,7 +24,7 @@
     "android": {
       "package": "com.rifaa.budget",
       "adaptiveIcon": {
-        "backgroundColor": "#F5F6F4",
+        "backgroundColor": "#0B201B",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -37,8 +37,8 @@
       "description": "Shared money, together.",
       "bundler": "metro",
       "output": "static",
-      "backgroundColor": "#F5F6F4",
-      "themeColor": "#F5F6F4",
+      "backgroundColor": "#0B201B",
+      "themeColor": "#0B201B",
       "display": "standalone",
       "orientation": "portrait"
     },

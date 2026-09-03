@@ -15,7 +15,7 @@ export default function SavingsLayout() {
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen name="create" options={{ title: 'New Savings Goal' }} />
+      <Stack.Screen name="create" options={{ headerShown: false }} />
       <Stack.Screen name="details" options={{ title: 'Savings Goal' }} />
       </Stack>
     </RequireAuth>

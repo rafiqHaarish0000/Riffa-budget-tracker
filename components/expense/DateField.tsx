@@ -47,7 +47,9 @@ export function DateField({ value, onChange }: DateFieldProps) {
             {formatDateLong(value)}
           </ThemedText>
         </View>
-        <Ionicons name="chevron-down" size={iconSizes.sm} color={colors.textMuted} />
+        <View style={styles.chevronCircle}>
+          <Ionicons name="chevron-forward" size={iconSizes.sm} color={colors.accent} />
+        </View>
       </Pressable>
 
       <GlassModal visible={open} onClose={() => setOpen(false)} presentationStyle="center">
@@ -66,7 +68,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    minHeight: 60,
+    minHeight: 64,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
@@ -79,12 +81,19 @@ const styles = StyleSheet.create({
   iconCircle: {
     width: 40,
     height: 40,
-    borderRadius: radius.pill,
+    borderRadius: radius.md,
     backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
   meta: {
     flex: 1,
+  },
+  chevronCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

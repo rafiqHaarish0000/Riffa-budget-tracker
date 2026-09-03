@@ -1,13 +1,16 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { FadeInView } from '../../components/dashboard/FadeInView';
 import { AmountInput, parseAmount } from '../../components/expense/AmountInput';
+import { ProgressRing } from '../../components/savings/ProgressRing';
 import { TargetDateField } from '../../components/savings/TargetDateField';
-import { GlassButton, GlassCard, GlassInput } from '../../components/ui/glass';
+import { GlassAvatar, GlassButton, GlassCard, GlassInput } from '../../components/ui/glass';
 import { ThemedScreen } from '../../components/ui/ThemedScreen';
 import { ThemedText } from '../../components/ui/ThemedText';
-import { colors, spacing } from '../../constants/theme';
+import { colors, iconSizes, radius, spacing } from '../../constants/theme';
 import { useAuth } from '../../hooks/useAuth';
 import { useSavings } from '../../hooks/useSavings';
 import { isSupabaseConfigured } from '../../lib/supabase';
@@ -150,14 +153,73 @@ export default function CreateSavingsScreen() {
       setError(submitError);
       return;
     }
-    router.back();
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/savings');
+    }
   }
 
   return (
     <ThemedScreen scroll keyboardShouldPersistTaps="handled">
-      <ThemedText variant="caption" color={colors.textMuted} style={styles.supporting}>
-        Give your next goal a name, target, and plan.
-      </ThemedText>
+      <FadeInView delay={0}>
+        <View style={styles.titleRow}>
+          <Pressable
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/(tabs)/savings');
+              }
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            hitSlop={8}
+            style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
+          >
+            <Ionicons name="chevron-back" size={iconSizes.md} color={colors.text} />
+          </Pressable>
+          <ThemedText variant="heading" color={colors.text} style={styles.headerTitle}>
+            New Goal
+          </ThemedText>
+          <Pressable
+            onPress={() => router.push('/profile')}
+            accessibilityRole="button"
+            accessibilityLabel="Open profile"
+            style={({ pressed }) => pressed && styles.backButtonPressed}
+          >
+            <GlassAvatar uri={user?.profile_image_url} name={user?.name} size={44} />
+          </Pressable>
+        </View>
+
+        <View style={styles.heroWrap}>
+          <LinearGradient
+            colors={['#17422F', '#0B201B']}
+            start={{ x: 0, y: 1 }}
+            end={{ x: 0, y: 0 }}
+            style={styles.heroImage}
+          />
+          <Image
+            source={{
+              uri: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=900&q=85',
+            }}
+            style={styles.heroImage}
+            resizeMode="cover"
+          />
+          <View style={styles.heroShade} />
+          <View style={styles.heroContent}>
+            <ThemedText variant="body" color={colors.accentStrong}>
+              Savings goal
+            </ThemedText>
+            <ThemedText variant="heading" color={colors.text}>
+              Build toward what matters
+            </ThemedText>
+            <ThemedText variant="caption" color={colors.textSecondary}>
+              Give your next goal a name, target, and monthly plan.
+            </ThemedText>
+          </View>
+        </View>
+      </FadeInView>
 
       <FadeInView delay={0} style={styles.section}>
         <GlassInput
@@ -262,25 +324,44 @@ export default function CreateSavingsScreen() {
       {preview ? (
         <FadeInView delay={300} style={styles.section}>
           <GlassCard>
-            <ThemedText variant="subheading" color={colors.text} numberOfLines={1}>
-              {trimmedName || 'New goal'}
-            </ThemedText>
-            <ThemedText variant="bodyMedium" color={colors.text} style={styles.previewAmount}>
-              {formatCurrency(preview.current)} / {formatCurrency(targetNumber ?? 0)}
-            </ThemedText>
-            <ThemedText variant="captionBold" color={colors.accentStrong}>
-              {preview.percent}% saved
-            </ThemedText>
-            {targetDate ? (
-              <ThemedText variant="caption" color={colors.textMuted} style={styles.previewLine}>
-                Target: {formatDateLabel(targetDate)}
-              </ThemedText>
-            ) : null}
-            {monthlyHasText && monthlyParsed !== null ? (
-              <ThemedText variant="caption" color={colors.textMuted} style={styles.previewLine}>
-                {formatCurrency(monthlyParsed)} / month
-              </ThemedText>
-            ) : null}
+            <View style={styles.previewRow}>
+              <ProgressRing
+                progress={preview.percent / 100}
+                size={96}
+                thickness={9}
+                centerValue={`${preview.percent}`}
+                centerCaption="%"
+              />
+              <View style={styles.previewBody}>
+                <ThemedText variant="subheading" color={colors.text} numberOfLines={1}>
+                  {trimmedName || 'New goal'}
+                </ThemedText>
+                <ThemedText variant="bodyMedium" color={colors.text} style={styles.previewAmount}>
+                  {formatCurrency(preview.current)}
+                  <ThemedText variant="caption" color={colors.textMuted}>
+                    {' '}/ {formatCurrency(targetNumber ?? 0)}
+                  </ThemedText>
+                </ThemedText>
+                <View style={styles.previewMeta}>
+                  {targetDate ? (
+                    <View style={styles.previewMetaItem}>
+                      <Ionicons name="calendar-outline" size={12} color={colors.accent} />
+                      <ThemedText variant="caption" color={colors.textSecondary}>
+                        {formatDateLabel(targetDate)}
+                      </ThemedText>
+                    </View>
+                  ) : null}
+                  {monthlyHasText && monthlyParsed !== null ? (
+                    <View style={styles.previewMetaItem}>
+                      <Ionicons name="trending-up-outline" size={12} color={colors.accent} />
+                      <ThemedText variant="caption" color={colors.textSecondary}>
+                        {formatCurrency(monthlyParsed)}/mo
+                      </ThemedText>
+                    </View>
+                  ) : null}
+                </View>
+              </View>
+            </View>
           </GlassCard>
         </FadeInView>
       ) : null}
@@ -319,9 +400,55 @@ function mapSavingsError(error: Error): string {
 }
 
 const styles = StyleSheet.create({
-  supporting: {
-    textAlign: 'center',
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: spacing.xl,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+  },
+  backButtonPressed: {
+    opacity: 0.7,
+  },
+  headerTitle: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    pointerEvents: 'none',
+  },
+  heroWrap: {
+    height: 168,
+    borderRadius: radius.xl,
+    overflow: 'hidden',
+    marginBottom: spacing.xl,
+    justifyContent: 'flex-end',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
+  },
+  heroImage: {
+    ...StyleSheet.absoluteFill,
+  },
+  heroShade: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(7, 30, 24, 0.45)',
+  },
+  heroContent: {
+    padding: spacing.lg,
   },
   section: {
     marginBottom: spacing.xl,
@@ -341,10 +468,26 @@ const styles = StyleSheet.create({
   footer: {
     paddingBottom: spacing.md,
   },
-  previewAmount: {
-    marginTop: spacing.xs,
+  previewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
   },
-  previewLine: {
-    marginTop: spacing.xs,
+  previewBody: {
+    flex: 1,
+  },
+  previewAmount: {
+    marginTop: spacing.xxs,
+  },
+  previewMeta: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+  },
+  previewMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
   },
 });

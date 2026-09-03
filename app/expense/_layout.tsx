@@ -15,7 +15,7 @@ export default function ExpenseLayout() {
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen name="add" options={{ title: 'Add Expense' }} />
+      <Stack.Screen name="add" options={{ headerShown: false }} />
       <Stack.Screen name="details" options={{ title: 'Expense details' }} />
       </Stack>
     </RequireAuth>

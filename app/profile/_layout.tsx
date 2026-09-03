@@ -15,7 +15,7 @@ export default function ProfileLayout() {
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen name="index" options={{ title: 'Profile' }} />
+      <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="family" options={{ title: 'Family' }} />
       <Stack.Screen name="settings" options={{ title: 'Settings' }} />
       </Stack>

@@ -20,7 +20,7 @@ export const theme = {
   minTouchTarget: 44,
   screenPadding: spacing.lg,
   gradient: {
-    colors: [colors.background, colors.tint, colors.backgroundAlt] as [string, string, ...string[]],
+    colors: [colors.background, colors.backgroundAlt, colors.background] as [string, string, ...string[]],
     start: { x: 0, y: 0 } as const,
     end: { x: 1, y: 1 } as const,
   },

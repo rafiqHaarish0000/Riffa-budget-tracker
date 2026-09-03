@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { GlassButton, GlassCard, GlassInput } from '../../components/ui/glass';
+import { AuthHero } from '../../components/ui/AuthHero';
 import { ThemedScreen } from '../../components/ui/ThemedScreen';
 import { ThemedText } from '../../components/ui/ThemedText';
-import { colors, iconSizes, spacing } from '../../constants/theme';
+import { colors, iconSizes, radius, spacing } from '../../constants/theme';
 import { useAuth } from '../../hooks/useAuth';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -17,6 +18,16 @@ export default function SignInScreen() {
   const [password, setPassword] = useState('');
   const [touched, setTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const enter = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(enter, {
+      toValue: 1,
+      duration: 520,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [enter]);
 
   const trimmedEmail = email.trim();
   const emailEmpty = trimmedEmail.length === 0;
@@ -42,29 +53,40 @@ export default function SignInScreen() {
   }
 
   return (
-    <ThemedScreen scroll keyboardShouldPersistTaps="handled">
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Back to intro"
-        disabled={signingIn}
-        onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-        hitSlop={8}
-        style={({ pressed }) => [styles.back, pressed && styles.backPressed]}
-      >
-        <Ionicons name="chevron-back" size={iconSizes.sm} color={colors.accent} />
-        <ThemedText variant="bodyMedium" color={colors.accent}>
-          Back
-        </ThemedText>
-      </Pressable>
+    <ThemedScreen scroll keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+      <View style={styles.topBar}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back to intro"
+          disabled={signingIn}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+          hitSlop={8}
+          style={({ pressed }) => [styles.back, pressed && styles.backPressed]}
+        >
+          <Ionicons name="chevron-back" size={iconSizes.md} color={colors.text} />
+        </Pressable>
+      </View>
 
-      <ThemedText variant="title" color={colors.text} style={styles.title}>
-        Welcome back
-      </ThemedText>
-      <ThemedText variant="body" color={colors.textSecondary} style={styles.supporting}>
-        Sign in to your shared money space.
-      </ThemedText>
+      <Animated.View style={[styles.enter, { opacity: enter, transform: [{ translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) }] }]}>
+        <AuthHero
+          atmosphere
+          eyebrow="YOUR PRIVATE SPACE"
+          title="Welcome "
+          accent="back."
+          supporting="Sign in to see what your money has been doing."
+        />
 
-      <GlassCard style={styles.card}>
+        <GlassCard style={styles.card}>
+          <View style={styles.cardAccent} />
+          <View style={styles.cardHeader}>
+            <View style={styles.cardIcon}>
+              <Ionicons name="lock-closed" size={iconSizes.sm} color={colors.accent} />
+            </View>
+            <View style={styles.cardHeaderText}>
+              <ThemedText variant="captionBold" color={colors.text}>Sign in securely</ThemedText>
+              <ThemedText variant="labelRegular" color={colors.textMuted}>Your family stays protected</ThemedText>
+            </View>
+          </View>
         <GlassInput
           label="Email"
           icon={<Ionicons name="mail-outline" size={iconSizes.md} color={colors.accent} />}
@@ -124,50 +146,95 @@ export default function SignInScreen() {
         ) : null}
 
         <GlassButton
-          title="Sign In"
+          title="Continue securely"
+          leading={<Ionicons name="lock-closed-outline" size={iconSizes.md} color={colors.textInverse} />}
+          trailing={<Ionicons name="arrow-forward" size={iconSizes.md} color={colors.textInverse} />}
           loading={signingIn}
           loadingTitle="Signing in…"
           disabled={!canSubmit}
           onPress={handleSignIn}
+          style={styles.submit}
         />
-      </GlassCard>
+        </GlassCard>
 
-      <Pressable
-        accessibilityRole="button"
-        disabled={signingIn}
-        onPress={() => router.push('/sign-up')}
-        style={({ pressed }) => [styles.secondary, pressed && styles.secondaryPressed]}
-      >
-        <ThemedText variant="bodyMedium" color={colors.accent}>
-          Create account
-        </ThemedText>
-      </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          disabled={signingIn}
+          onPress={() => router.push('/sign-up')}
+          style={({ pressed }) => [styles.secondary, pressed && styles.secondaryPressed]}
+        >
+          <ThemedText variant="caption" color={colors.textMuted}>New to RIFAA?</ThemedText>
+          <ThemedText variant="bodyMedium" color={colors.accentStrong}>Create an account</ThemedText>
+        </Pressable>
+
+        <View style={styles.trustRow}>
+          <Ionicons name="shield-checkmark-outline" size={iconSizes.sm} color={colors.accent} />
+          <ThemedText variant="caption" color={colors.textMuted}>Bank-grade security</ThemedText>
+          <View style={styles.trustDot} />
+          <ThemedText variant="caption" color={colors.textMuted}>Encrypted end to end</ThemedText>
+        </View>
+      </Animated.View>
     </ThemedScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  back: {
-    alignSelf: 'flex-start',
+  content: {
+    flexGrow: 1,
+    paddingBottom: spacing.xxxl,
+  },
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 44,
-    marginBottom: spacing.xl,
+    justifyContent: 'flex-start',
+    marginBottom: spacing.lg,
+  },
+  back: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
   },
   backPressed: {
     opacity: 0.7,
   },
-  title: {
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
-  supporting: {
-    textAlign: 'center',
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.xl,
+  enter: {
+    flex: 1,
   },
   card: {
     marginBottom: spacing.xl,
+    padding: spacing.xl,
+    borderColor: colors.borderStrong,
+    overflow: 'hidden',
+  },
+  cardAccent: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: 'rgba(85, 214, 177, 0.5)',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xl,
+  },
+  cardHeaderText: {
+    flex: 1,
+  },
+  cardIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.pill,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.accentSoft,
   },
   fieldError: {
     marginTop: spacing.xs,
@@ -178,12 +245,38 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.lg,
   },
+  submit: {
+    marginTop: spacing.xs,
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+    minHeight: 56,
+    borderRadius: radius.lg,
+  },
   secondary: {
-    minHeight: 44,
+    minHeight: 64,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.xs,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
   secondaryPressed: {
     opacity: 0.7,
+  },
+  trustRow: {
+    marginTop: 'auto',
+    paddingTop: spacing.xxxl,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  trustDot: {
+    width: 3,
+    height: 3,
+    borderRadius: radius.pill,
+    backgroundColor: colors.borderStrong,
+    marginHorizontal: spacing.xs,
   },
 });

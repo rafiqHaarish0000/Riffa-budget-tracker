@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { GlassButton, GlassCard, GlassInput } from '../../components/ui/glass';
+import { AuthAtmosphere } from '../../components/ui/AuthAtmosphere';
+import { AuthHero } from '../../components/ui/AuthHero';
 import { ThemedScreen } from '../../components/ui/ThemedScreen';
 import { ThemedText } from '../../components/ui/ThemedText';
-import { colors, iconSizes, spacing } from '../../constants/theme';
+import { colors, iconSizes, radius, spacing } from '../../constants/theme';
 import { useAuth } from '../../hooks/useAuth';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -21,6 +23,16 @@ export default function SignUpScreen() {
   const [touched, setTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmationPending, setConfirmationPending] = useState(false);
+  const enter = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(enter, {
+      toValue: 1,
+      duration: 520,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [enter]);
 
   const trimmedName = name.trim();
   const trimmedEmail = email.trim();
@@ -70,6 +82,7 @@ export default function SignUpScreen() {
   if (confirmationPending) {
     return (
       <ThemedScreen scroll>
+        <AuthAtmosphere />
         <ThemedText variant="title" color={colors.text} style={styles.title}>
           Check your email
         </ThemedText>
@@ -96,29 +109,43 @@ export default function SignUpScreen() {
   }
 
   return (
-    <ThemedScreen scroll keyboardShouldPersistTaps="handled">
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Back to intro"
-        disabled={signingIn}
-        onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-        hitSlop={8}
-        style={({ pressed }) => [styles.back, pressed && styles.backPressed]}
-      >
-        <Ionicons name="chevron-back" size={iconSizes.sm} color={colors.accent} />
-        <ThemedText variant="bodyMedium" color={colors.accent}>
-          Back
-        </ThemedText>
-      </Pressable>
+    <ThemedScreen scroll keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+      <AuthAtmosphere />
+      <View style={styles.topBar}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back to intro"
+          disabled={signingIn}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+          hitSlop={8}
+          style={({ pressed }) => [styles.back, pressed && styles.backPressed]}
+        >
+          <Ionicons name="chevron-back" size={iconSizes.md} color={colors.text} />
+        </Pressable>
+        <ThemedText variant="captionBold" color={colors.textMuted}>STEP 1 OF 2</ThemedText>
+      </View>
 
-      <ThemedText variant="title" color={colors.text} style={styles.title}>
-        Create your account
-      </ThemedText>
-      <ThemedText variant="body" color={colors.textSecondary} style={styles.supporting}>
-        Start your shared money space.
-      </ThemedText>
+      <Animated.View style={[styles.enter, { opacity: enter, transform: [{ translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) }] }]}>
+        <AuthHero
+          atmosphere
+          eyebrow="START WITH RIFFA"
+          title="Create your "
+          accent="account."
+          supporting="Set up your private money space. Your family comes next."
+          progress={{ active: 1, total: 2 }}
+        />
 
-      <GlassCard style={styles.card}>
+        <GlassCard style={styles.card}>
+          <View style={styles.cardAccent} />
+          <View style={styles.cardHeader}>
+            <View style={styles.cardIcon}>
+              <Ionicons name="person-add" size={iconSizes.sm} color={colors.accent} />
+            </View>
+            <View style={styles.cardHeaderText}>
+              <ThemedText variant="captionBold" color={colors.text}>Your details</ThemedText>
+              <ThemedText variant="labelRegular" color={colors.textMuted}>It takes less than a minute</ThemedText>
+            </View>
+          </View>
         <GlassInput
           label="Name"
           icon={<Ionicons name="person-outline" size={iconSizes.md} color={colors.accent} />}
@@ -231,50 +258,97 @@ export default function SignUpScreen() {
         ) : null}
 
         <GlassButton
-          title="Create account"
+          title="Create my RIFFA account"
+          leading={<Ionicons name="sparkles" size={iconSizes.md} color={colors.textInverse} />}
+          trailing={<Ionicons name="arrow-forward" size={iconSizes.md} color={colors.textInverse} />}
           loading={signingIn}
           loadingTitle="Creating account…"
           disabled={!canSubmit}
           onPress={handleSignUp}
+          style={styles.submit}
         />
-      </GlassCard>
+        </GlassCard>
 
-      <Pressable
-        accessibilityRole="button"
-        disabled={signingIn}
-        onPress={() => router.push('/sign-in')}
-        style={({ pressed }) => [styles.secondary, pressed && styles.secondaryPressed]}
-      >
-        <ThemedText variant="bodyMedium" color={colors.accent}>
-          Already have an account? Sign in
-        </ThemedText>
-      </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          disabled={signingIn}
+          onPress={() => router.push('/sign-in')}
+          style={({ pressed }) => [styles.secondary, pressed && styles.secondaryPressed]}
+        >
+          <ThemedText variant="caption" color={colors.textMuted}>Already part of RIFFA?</ThemedText>
+          <ThemedText variant="bodyMedium" color={colors.accentStrong}>Sign in instead</ThemedText>
+        </Pressable>
+      </Animated.View>
     </ThemedScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  back: {
-    alignSelf: 'flex-start',
+  content: {
+    flexGrow: 1,
+    paddingBottom: spacing.xxxl,
+  },
+  topBar: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    minHeight: 44,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xxl,
+  },
+  back: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
   },
   backPressed: {
     opacity: 0.7,
   },
+  enter: {
+    flex: 1,
+  },
   title: {
     textAlign: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
+    letterSpacing: -0.5,
   },
   supporting: {
     textAlign: 'center',
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.xl,
+    maxWidth: 310,
   },
   card: {
     marginBottom: spacing.xl,
+    padding: spacing.xl,
+    borderColor: colors.borderStrong,
+    overflow: 'hidden',
+  },
+  cardAccent: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: 'rgba(85, 214, 177, 0.5)',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xl,
+  },
+  cardHeaderText: {
+    flex: 1,
+  },
+  cardIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.accentSoft,
   },
   fieldError: {
     marginTop: spacing.xs,
@@ -285,10 +359,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.lg,
   },
+  submit: {
+    marginTop: spacing.xs,
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+    minHeight: 56,
+    borderRadius: radius.lg,
+  },
   secondary: {
-    minHeight: 44,
+    minHeight: 64,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.xs,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
   secondaryPressed: {
     opacity: 0.7,

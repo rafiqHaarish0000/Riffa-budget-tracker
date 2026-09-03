@@ -13,7 +13,7 @@ export default function RootLayout() {
         <meta name="description" content="Shared money, together." />
       </Head>
       <AppProviders>
-        <StatusBar style="dark" />
+        <StatusBar style="light" />
         <Stack
           screenOptions={{
             headerShown: false,

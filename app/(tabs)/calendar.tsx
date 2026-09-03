@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { ExpenseList } from '../../components/dashboard/ExpenseList';
 import { FadeInView } from '../../components/dashboard/FadeInView';
-import { GlassCard, GlassSection } from '../../components/ui/glass';
+import { GlassCard } from '../../components/ui/glass';
 import { ThemedScreen } from '../../components/ui/ThemedScreen';
 import { ThemedText } from '../../components/ui/ThemedText';
 import { ScreenState, ScreenStateSkeleton } from '../../components/ui/ScreenState';
@@ -117,11 +117,6 @@ export default function CalendarScreen() {
     });
   }
 
-  function goToToday() {
-    setViewMonth(startOfMonth(todayDate));
-    setSelectedDate(todayDate);
-  }
-
   function renderNumberRow() {
     return (
       <View style={styles.grid}>
@@ -134,6 +129,7 @@ export default function CalendarScreen() {
           const isToday = isSameDay(date, todayDate) && isCurrentMonth;
           const hasExpenses = expensesByDay.has(dayKey(date));
           const disabled = date.getTime() > todayDate.getTime();
+          const isWeekend = index % 7 >= 5;
 
           return (
             <Pressable
@@ -143,22 +139,40 @@ export default function CalendarScreen() {
               accessibilityState={{ selected: isSelected, disabled }}
               disabled={disabled}
               onPress={() => setSelectedDate(date)}
-              style={[styles.cell, disabled && styles.cellDisabled]}
+              style={({ pressed }) => [
+                styles.cell,
+                disabled && styles.cellDisabled,
+                pressed && !disabled && styles.cellPressed,
+              ]}
             >
               <View
                 style={[
                   styles.day,
                   isSelected && styles.daySelected,
                   !isSelected && isToday && styles.dayToday,
+                  !isSelected && !isToday && hasExpenses && styles.dayWithExpenses,
                 ]}
               >
-                <ThemedText variant="bodyMedium" color={isSelected ? colors.textInverse : colors.text}>
+                <ThemedText
+                  variant="bodyMedium"
+                  color={
+                    isSelected
+                      ? colors.textInverse
+                      : isToday
+                        ? colors.accent
+                        : isWeekend
+                          ? colors.accent
+                          : colors.text
+                  }
+                >
                   {day}
                 </ThemedText>
-                <View style={styles.indicatorSlot}>
-                  {hasExpenses ? <View style={[styles.indicator, isSelected && styles.indicatorSelected]} /> : null}
-                </View>
               </View>
+              {hasExpenses && (
+                <View style={[styles.indicatorContainer, isSelected && styles.indicatorContainerSelected]}>
+                  <View style={[styles.indicatorDot, isSelected && styles.indicatorDotSelected]} />
+                </View>
+              )}
             </Pressable>
           );
         })}
@@ -169,21 +183,23 @@ export default function CalendarScreen() {
   return (
     <ThemedScreen
       scroll
-      contentContainerStyle={{ paddingBottom: spacing.massive + 92 }}
+      contentContainerStyle={styles.screenContent}
     >
       <FadeInView delay={0}>
         <View style={styles.header}>
-          <ThemedText variant="heading" color={colors.text}>
-            Calendar
-          </ThemedText>
-          <ThemedText variant="caption" color={colors.textMuted}>
-            See where your money went each day.
-          </ThemedText>
+          <View style={styles.headerLeft}>
+            <ThemedText variant="heading" color={colors.text}>
+              Calendar
+            </ThemedText>
+            <ThemedText variant="caption" color={colors.textMuted}>
+              See where your money went each day.
+            </ThemedText>
+          </View>
         </View>
       </FadeInView>
 
-      <FadeInView delay={60} style={styles.section}>
-        <GlassCard>
+      <FadeInView delay={60} style={styles.calendarSection}>
+        <GlassCard padding={0} style={styles.calendarCard}>
           <View style={styles.calHeader}>
             <Pressable
               accessibilityRole="button"
@@ -191,159 +207,227 @@ export default function CalendarScreen() {
               disabled={!canGoBack}
               onPress={() => navigateMonth(-1)}
               hitSlop={8}
-              style={[styles.nav, !canGoBack && styles.navDisabled]}
+              style={({ pressed }) => [
+                styles.navButton,
+                !canGoBack && styles.navDisabled,
+                pressed && styles.navPressed,
+              ]}
             >
               <Ionicons name="chevron-back" size={iconSizes.md} color={colors.accent} />
             </Pressable>
-            <ThemedText variant="subheading" color={colors.text}>
-              {monthLabel}
-            </ThemedText>
+            <View style={styles.monthLabelContainer}>
+              <ThemedText variant="subheading" color={colors.text}>
+                {monthLabel}
+              </ThemedText>
+              {monthCount > 0 && (
+                <View style={styles.monthBadge}>
+                  <ThemedText variant="label" color={colors.accentStrong}>
+                    {monthCount}
+                  </ThemedText>
+                </View>
+              )}
+            </View>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Next month"
               disabled={!canGoNext}
               onPress={() => navigateMonth(1)}
               hitSlop={8}
-              style={[styles.nav, !canGoNext && styles.navDisabled]}
+              style={({ pressed }) => [
+                styles.navButton,
+                !canGoNext && styles.navDisabled,
+                pressed && styles.navPressed,
+              ]}
             >
               <Ionicons name="chevron-forward" size={iconSizes.md} color={colors.accent} />
             </Pressable>
           </View>
 
           <View style={styles.weekRow}>
-            {WEEKDAYS.map((day) => (
-              <ThemedText key={day} variant="label" color={colors.textMuted} style={styles.weekCell}>
+            {WEEKDAYS.map((day, index) => (
+              <ThemedText
+                key={day}
+                variant="label"
+                color={index >= 5 ? colors.accent : colors.textMuted}
+                style={styles.weekCell}
+              >
                 {day}
               </ThemedText>
             ))}
           </View>
 
-          {renderNumberRow()}
+          <View style={styles.gridContainer}>
+            {renderNumberRow()}
+          </View>
 
-          {!isCurrentMonth ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={goToToday}
-              hitSlop={8}
-              style={({ pressed }) => [styles.todayLink, pressed && styles.todayLinkPressed]}
-            >
-              <ThemedText variant="captionBold" color={colors.accentStrong}>
-                Today
-              </ThemedText>
-            </Pressable>
-          ) : null}
+
         </GlassCard>
       </FadeInView>
 
-      <GlassSection title="Monthly summary">
-        <FadeInView delay={120}>
-          <GlassCard padding={spacing.lg}>
-            {loading ? (
-              <ThemedText variant="body" color={colors.textMuted}>
-                Loading month…
-              </ThemedText>
-            ) : error ? (
-              <ThemedText variant="body" color={colors.textMuted}>
-                Couldn&apos;t load this month.
-              </ThemedText>
-            ) : (
-              <View style={styles.summaryRow}>
-                <View style={styles.summaryItem}>
-                  <ThemedText variant="caption" color={colors.textMuted}>
-                    Total spent
-                  </ThemedText>
-                  <ThemedText variant="subheading" color={colors.text}>
-                    {formatCurrency(monthTotal)}
-                  </ThemedText>
+      <FadeInView delay={120} style={styles.summarySection}>
+        <View style={styles.summaryHeader}>
+          <ThemedText variant="subheading" color={colors.text}>
+            Monthly summary
+          </ThemedText>
+        </View>
+        <GlassCard padding={spacing.lg} style={styles.summaryCard}>
+          {loading ? (
+            <ThemedText variant="body" color={colors.textMuted}>
+              Loading month…
+            </ThemedText>
+          ) : error ? (
+            <ThemedText variant="body" color={colors.textMuted}>
+              Couldn&apos;t load this month.
+            </ThemedText>
+          ) : (
+            <View style={styles.summaryGrid}>
+              <View style={styles.summaryItem}>
+                <View style={styles.summaryIconContainer}>
+                  <Ionicons name="wallet-outline" size={20} color={colors.accent} />
                 </View>
-                <View style={styles.summaryDivider} />
-                <View style={styles.summaryItem}>
-                  <ThemedText variant="caption" color={colors.textMuted}>
-                    Expenses
-                  </ThemedText>
-                  <ThemedText variant="subheading" color={colors.text}>
-                    {monthCount}
-                  </ThemedText>
-                </View>
+                <ThemedText variant="caption" color={colors.textMuted}>
+                  Total spent
+                </ThemedText>
+                <ThemedText variant="subheading" color={colors.text}>
+                  {formatCurrency(monthTotal)}
+                </ThemedText>
               </View>
-            )}
+              <View style={styles.summaryDivider} />
+              <View style={styles.summaryItem}>
+                <View style={styles.summaryIconContainer}>
+                  <Ionicons name="receipt-outline" size={20} color={colors.accent} />
+                </View>
+                <ThemedText variant="caption" color={colors.textMuted}>
+                  Expenses
+                </ThemedText>
+                <ThemedText variant="subheading" color={colors.text}>
+                  {monthCount}
+                </ThemedText>
+              </View>
+            </View>
+          )}
+        </GlassCard>
+      </FadeInView>
+
+      <FadeInView delay={180} style={styles.selectedDaySection}>
+        <View style={styles.selectedDayHeader}>
+          <View style={styles.selectedDayTitleRow}>
+            <View style={styles.selectedDayDot} />
+            <ThemedText variant="heading" color={colors.text}>
+              {formatDateLong(selectedKey)}
+            </ThemedText>
+          </View>
+          <ThemedText variant="caption" color={colors.textMuted}>
+            {selectedExpenses.length === 0
+              ? 'Nothing was recorded for this day.'
+              : `${selectedExpenses.length} expense${selectedExpenses.length === 1 ? '' : 's'} · ${formatCurrency(selectedTotal)}`}
+          </ThemedText>
+        </View>
+      </FadeInView>
+
+      <View style={styles.expensesSection}>
+        {loading ? (
+          <ScreenStateSkeleton rows={3} />
+        ) : error ? (
+          <ScreenState
+            kind="error"
+            icon="alert-circle-outline"
+            title="Something went wrong"
+            message="We couldn&apos;t load your expenses."
+            actionLabel="Retry"
+            actionVariant="secondary"
+            onAction={() => refetch()}
+          />
+        ) : selectedExpenses.length === 0 ? (
+          <GlassCard style={styles.emptyCard}>
+            <View style={styles.emptyIcon}>
+              <Ionicons name="calendar-outline" size={iconSizes.xl} color={colors.accentStrong} />
+            </View>
+            <ThemedText variant="subheading" color={colors.text}>
+              No expenses
+            </ThemedText>
+            <ThemedText variant="caption" color={colors.textMuted} style={styles.emptyText}>
+              Nothing was recorded for this day.
+            </ThemedText>
           </GlassCard>
-        </FadeInView>
-      </GlassSection>
-
-      <View style={styles.section}>
-        <ThemedText variant="heading" color={colors.text}>
-          {formatDateLong(selectedKey)}
-        </ThemedText>
-        <ThemedText variant="caption" color={colors.textMuted} style={styles.daySubtitle}>
-          {selectedExpenses.length === 0
-            ? 'Nothing was recorded for this day.'
-            : `${selectedExpenses.length} expense${selectedExpenses.length === 1 ? '' : 's'} · ${formatCurrency(selectedTotal)}`}
-        </ThemedText>
+        ) : (
+          <ExpenseList
+            expenses={selectedExpenses}
+            onPressExpense={(id) => router.push({ pathname: '/expense/details', params: { id } })}
+            paymentsByExpense={paymentsByExpense}
+            members={members}
+            currentUserId={user?.id ?? null}
+          />
+        )}
       </View>
-
-      {loading ? (
-        <ScreenStateSkeleton rows={3} />
-      ) : error ? (
-        <ScreenState
-          kind="error"
-          icon="alert-circle-outline"
-          title="Something went wrong"
-          message="We couldn&apos;t load your expenses."
-          actionLabel="Retry"
-          actionVariant="secondary"
-          onAction={() => refetch()}
-        />
-      ) : selectedExpenses.length === 0 ? (
-        <ScreenState
-          kind="empty"
-          icon="calendar-outline"
-          title="No expenses"
-          message="Nothing was recorded for this day."
-          compact
-        />
-      ) : (
-        <ExpenseList
-          expenses={selectedExpenses}
-          onPressExpense={(id) => router.push({ pathname: '/expense/details', params: { id } })}
-          paymentsByExpense={paymentsByExpense}
-          members={members}
-          currentUserId={user?.id ?? null}
-        />
-      )}
     </ThemedScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    marginBottom: spacing.lg,
+  screenContent: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.massive + 92,
   },
-  section: {
-    marginBottom: spacing.xxl,
+  header: {
+    marginBottom: spacing.xl,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  calendarSection: {
+    marginBottom: spacing.xl,
+  },
+  calendarCard: {
+    paddingVertical: spacing.lg,
   },
   calHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.md,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.sm,
+    marginBottom: spacing.lg,
   },
-  nav: {
-    width: 44,
-    height: 44,
+  navButton: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  navPressed: {
+    backgroundColor: colors.surfaceStrong,
+    transform: [{ scale: 0.95 }],
   },
   navDisabled: {
     opacity: 0.3,
   },
+  monthLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  monthBadge: {
+    backgroundColor: colors.accentSoft,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
+    borderRadius: radius.pill,
+  },
   weekRow: {
     flexDirection: 'row',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.sm,
   },
   weekCell: {
     flexBasis: `${100 / 7}%`,
     textAlign: 'center',
+  },
+  gridContainer: {
+    paddingHorizontal: spacing.sm,
   },
   grid: {
     flexDirection: 'row',
@@ -356,61 +440,121 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxs,
   },
   cellDisabled: {
-    opacity: 0.35,
+    opacity: 0.3,
+  },
+  cellPressed: {
+    transform: [{ scale: 0.92 }],
   },
   day: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.pill,
+    width: 40,
+    height: 40,
+    borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   daySelected: {
     backgroundColor: colors.accent,
+    ...{
+      shadowColor: colors.accent,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.4,
+      shadowRadius: 8,
+      elevation: 4,
+    },
   },
   dayToday: {
+    backgroundColor: colors.accentSoft,
     borderWidth: 1.5,
     borderColor: colors.accent,
   },
-  indicatorSlot: {
+  dayWithExpenses: {
+    backgroundColor: 'rgba(85, 214, 177, 0.08)',
+  },
+  indicatorContainer: {
     position: 'absolute',
     bottom: 4,
-  },
-  indicator: {
-    width: 5,
-    height: 5,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accent,
-  },
-  indicatorSelected: {
-    backgroundColor: colors.textInverse,
-  },
-  todayLink: {
-    alignSelf: 'center',
-    marginTop: spacing.md,
-    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.md,
   },
-  todayLinkPressed: {
-    opacity: 0.7,
+  indicatorContainerSelected: {
+    bottom: 3,
   },
-  summaryRow: {
+  indicatorDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.accent,
+  },
+  indicatorDotSelected: {
+    backgroundColor: colors.textInverse,
+  },
+  summarySection: {
+    marginBottom: spacing.xl,
+  },
+  summaryHeader: {
+    marginBottom: spacing.md,
+  },
+  summaryCard: {
+    paddingVertical: spacing.xl,
+  },
+  summaryGrid: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   summaryItem: {
     flex: 1,
+    gap: spacing.sm,
+  },
+  summaryIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.sm,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
   },
   summaryDivider: {
     width: StyleSheet.hairlineWidth,
     alignSelf: 'stretch',
-    marginHorizontal: spacing.lg,
+    marginHorizontal: spacing.xl,
     backgroundColor: colors.border,
   },
-  daySubtitle: {
-    marginTop: spacing.xs,
+  selectedDaySection: {
     marginBottom: spacing.md,
+  },
+  selectedDayHeader: {
+    gap: spacing.xs,
+  },
+  selectedDayTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  selectedDayDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.accent,
+  },
+  expensesSection: {
+    marginBottom: spacing.xl,
+  },
+  emptyCard: {
+    alignItems: 'center',
+    paddingVertical: spacing.xxxl,
+  },
+  emptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  emptyText: {
+    marginTop: spacing.xs,
+    textAlign: 'center',
   },
 });

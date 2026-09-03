@@ -4,6 +4,7 @@ import {
   AccessibilityInfo,
   Animated,
   Easing,
+  Image,
   Platform,
   StyleSheet,
   View,
@@ -11,14 +12,14 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassScreenBackground } from '../components/ui/glass/GlassBackground';
-import { GlassCard } from '../components/ui/glass';
+import { AuthAtmosphere } from '../components/ui/AuthAtmosphere';
 import { ThemedText } from '../components/ui/ThemedText';
-import { colors, glass, radius, shadows, spacing, theme } from '../constants/theme';
+import { colors, radius, spacing, theme } from '../constants/theme';
 import { useAuth } from '../hooks/useAuth';
 import { resolveAuthedRoute } from '../contexts/AuthContext';
 
-const SPLASH_DURATION_MS = 1900;
-const LOGO_SIZE = 120;
+const SPLASH_DURATION_MS = 3600;
+const LOGO_SIZE = 172;
 
 export default function SplashScreen() {
   const router = useRouter();
@@ -33,6 +34,9 @@ export default function SplashScreen() {
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const taglineOpacity = useRef(new Animated.Value(0)).current;
   const bottomOpacity = useRef(new Animated.Value(0)).current;
+  const haloOpacity = useRef(new Animated.Value(0)).current;
+  const haloScale = useRef(new Animated.Value(0.82)).current;
+  const ringRotation = useRef(new Animated.Value(-28)).current;
 
   useEffect(() => {
     let active = true;
@@ -54,6 +58,9 @@ export default function SplashScreen() {
       logoOpacity.setValue(1);
       taglineOpacity.setValue(1);
       bottomOpacity.setValue(1);
+      haloOpacity.setValue(0.28);
+      haloScale.setValue(1);
+      ringRotation.setValue(0);
       setReadyToNavigate(true);
       return;
     }
@@ -66,6 +73,24 @@ export default function SplashScreen() {
         useNativeDriver: useNative,
       }),
       Animated.parallel([
+        Animated.timing(haloOpacity, {
+          toValue: 0.28,
+          duration: 620,
+          easing: eased,
+          useNativeDriver: useNative,
+        }),
+        Animated.timing(haloScale, {
+          toValue: 1,
+          duration: 700,
+          easing: eased,
+          useNativeDriver: useNative,
+        }),
+        Animated.timing(ringRotation, {
+          toValue: 0,
+          duration: 760,
+          easing: eased,
+          useNativeDriver: useNative,
+        }),
         Animated.timing(logoScale, {
           toValue: 1,
           duration: 650,
@@ -96,7 +121,7 @@ export default function SplashScreen() {
     ]).start(() => {
       setReadyToNavigate(true);
     });
-  }, [reduceMotion, bgOpacity, logoScale, logoOpacity, taglineOpacity, bottomOpacity]);
+  }, [reduceMotion, bgOpacity, logoScale, logoOpacity, taglineOpacity, bottomOpacity, haloOpacity, haloScale, ringRotation]);
 
   const mountedAt = useRef(Date.now()).current;
 
@@ -109,29 +134,55 @@ export default function SplashScreen() {
     // navigation happens right away).
     const elapsed = Date.now() - mountedAt;
     const delay = reduceMotion ? 0 : Math.max(0, SPLASH_DURATION_MS - elapsed);
+    let exitAnimation: Animated.CompositeAnimation | null = null;
     const id = setTimeout(() => {
       const route = resolveAuthedRoute(session, user) ?? '/(auth)/intro';
-      router.replace(route);
+      if (reduceMotion) {
+        router.replace(route);
+        return;
+      }
+      exitAnimation = Animated.timing(bgOpacity, {
+        toValue: 0,
+        duration: 420,
+        easing: Easing.inOut(Easing.quad),
+        useNativeDriver: Platform.OS !== 'web',
+      });
+      exitAnimation.start(({ finished }) => {
+        if (finished) router.replace(route);
+      });
     }, delay);
-    return () => clearTimeout(id);
-  }, [readyToNavigate, loading, session, user, router, reduceMotion, mountedAt]);
+    return () => {
+      clearTimeout(id);
+      exitAnimation?.stop();
+    };
+  }, [readyToNavigate, loading, session, user, router, reduceMotion, mountedAt, bgOpacity]);
 
   return (
     <GlassScreenBackground>
-      <Animated.View style={[styles.fill, { opacity: bgOpacity }]}>
-        <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <AuthAtmosphere />
+      <Animated.View style={[styles.fill, { opacity: bgOpacity }]}> 
+        <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}> 
+          <Animated.View style={[styles.topNote, { opacity: taglineOpacity }]}> 
+            <View style={styles.liveDot} />
+            <ThemedText variant="label" color={colors.accentStrong}>YOUR FAMILY FINANCE SPACE</ThemedText>
+          </Animated.View>
           <View style={styles.hero}>
             <Animated.View
-              style={{
-                opacity: logoOpacity,
-                transform: [{ scale: logoScale }],
-              }}
-            >
-              <SavingsEmblem />
+              pointerEvents="none"
+              style={[
+                styles.halo,
+                {
+                  opacity: haloOpacity,
+                  transform: [{ scale: haloScale }, { rotate: ringRotation.interpolate({ inputRange: [-28, 0], outputRange: ['-28deg', '0deg'] }) }],
+                },
+              ]}
+            />
+            <Animated.View style={[styles.logoFrame, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}>
+              <Image source={require('../assets/riffa-logo-header.png')} style={styles.logo} resizeMode="contain" />
             </Animated.View>
 
             <ThemedText variant="display" color={colors.text} style={styles.wordmark}>
-              RIFAA
+              RIFFA
             </ThemedText>
 
             <Animated.View style={{ opacity: taglineOpacity }}>
@@ -141,30 +192,17 @@ export default function SplashScreen() {
             </Animated.View>
           </View>
 
-          <Animated.View style={[styles.bottom, { opacity: bottomOpacity }]}>
+          <Animated.View style={[styles.bottom, { opacity: bottomOpacity }]}> 
             <ThemedText variant="caption" color={colors.textMuted} style={styles.bottomText}>
-              Your shared money space
+              SHARED MONEY, TOGETHER
             </ThemedText>
+            <View style={styles.loadingTrack}>
+              <View style={styles.loadingFill} />
+            </View>
           </Animated.View>
         </View>
       </Animated.View>
     </GlassScreenBackground>
-  );
-}
-
-function SavingsEmblem() {
-  return (
-    <GlassCard
-      tint="extraLight"
-      intensity={glass.blur.heavy}
-      style={styles.emblemCard}
-      padding={0}
-    >
-      <View style={styles.emblem}>
-        <View style={styles.emblemRing} />
-        <View style={styles.emblemCore} />
-      </View>
-    </GlassCard>
   );
 }
 
@@ -182,35 +220,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: -spacing.massive,
   },
-  emblemCard: {
-    width: LOGO_SIZE,
-    height: LOGO_SIZE,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.soft,
-  },
-  emblem: {
-    width: LOGO_SIZE,
-    height: LOGO_SIZE,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emblemRing: {
+  topNote: {
     position: 'absolute',
-    width: LOGO_SIZE - 28,
-    height: LOGO_SIZE - 28,
-    borderRadius: radius.pill,
-    borderWidth: 1.5,
-    borderColor: colors.accent,
-    opacity: 0.35,
+    top: spacing.xxl,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
-  emblemCore: {
-    width: 14,
-    height: 14,
+  liveDot: {
+    width: 6,
+    height: 6,
     borderRadius: radius.pill,
-    backgroundColor: colors.accentStrong,
+    backgroundColor: colors.accent,
+  },
+  halo: {
+    position: 'absolute',
+    width: LOGO_SIZE + 48,
+    height: LOGO_SIZE + 48,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  logoFrame: {
+    padding: spacing.xs,
+    borderRadius: radius.md,
+    backgroundColor: colors.background,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+  },
+  logo: {
+    width: LOGO_SIZE,
+    height: LOGO_SIZE,
+    borderRadius: radius.sm,
   },
   wordmark: {
     marginTop: spacing.xxxl,
@@ -226,5 +267,19 @@ const styles = StyleSheet.create({
   },
   bottomText: {
     letterSpacing: 0.4,
+  },
+  loadingTrack: {
+    width: 92,
+    height: 3,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceStrong,
+    overflow: 'hidden',
+    marginTop: spacing.sm,
+  },
+  loadingFill: {
+    width: '68%',
+    height: '100%',
+    borderRadius: radius.pill,
+    backgroundColor: colors.accent,
   },
 });

@@ -20,7 +20,7 @@ export function GlassCard({
   return (
     <BlurView
       intensity={intensity}
-      tint={tint}
+      tint={tint === 'light' || tint === 'extraLight' ? 'dark' : tint}
       style={[styles.card, { padding }, style]}
     >
       {children}

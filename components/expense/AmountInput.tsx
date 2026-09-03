@@ -1,5 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Platform, StyleSheet, TextInput, View } from 'react-native';
-import { colors, radius, spacing, typography } from '../../constants/theme';
+import { colors, iconSizes, radius, spacing, typography } from '../../constants/theme';
 import { GlassCard } from '../ui/glass';
 import { ThemedText } from '../ui/ThemedText';
 
@@ -44,14 +45,21 @@ type AmountInputProps = {
 export function AmountInput({ value, onChangeText, editable = true, label = 'Amount' }: AmountInputProps) {
   return (
     <View>
-      <ThemedText variant="label" color={colors.textSecondary} style={styles.label}>
-        {label}
-      </ThemedText>
-      <GlassCard padding={spacing.lg}>
+      <View style={styles.labelRow}>
+        <View style={styles.labelIcon}>
+          <Ionicons name="cash-outline" size={14} color={colors.accent} />
+        </View>
+        <ThemedText variant="label" color={colors.textSecondary} style={styles.label}>
+          {label}
+        </ThemedText>
+      </View>
+      <GlassCard padding={spacing.xl} style={styles.card}>
         <View style={styles.row}>
-          <ThemedText variant="title" color={colors.text} style={styles.currency}>
-            ₹
-          </ThemedText>
+          <View style={styles.currencyCircle}>
+            <ThemedText variant="title" color={colors.accentStrong} style={styles.currency}>
+              ₹
+            </ThemedText>
+          </View>
           <TextInput
             value={value}
             onChangeText={(text) => onChangeText(sanitizeAmountInput(text))}
@@ -73,26 +81,51 @@ export function AmountInput({ value, onChangeText, editable = true, label = 'Amo
 }
 
 const styles = StyleSheet.create({
-  label: {
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     marginBottom: spacing.sm,
     marginLeft: spacing.xs,
+  },
+  labelIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: radius.sm,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  label: {
+    fontSize: 14,
+  },
+  card: {
+    paddingVertical: spacing.xl,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+  currencyCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.md,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
   currency: {
-    fontSize: 40,
-    lineHeight: 48,
-    marginRight: spacing.sm,
+    fontSize: 24,
+    lineHeight: 32,
   },
   input: {
     flex: 1,
     minHeight: 52,
     padding: 0,
     ...typography.title,
-    fontSize: 44,
-    lineHeight: 52,
+    fontSize: 40,
+    lineHeight: 48,
     color: colors.text,
     ...(Platform.OS === 'web'
       ? ({ outlineStyle: 'none' } as unknown as Record<string, unknown>)

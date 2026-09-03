@@ -1,5 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { GlassAvatar, GlassCard, GlassChip, GlassSection } from '../../components/ui/glass';
 import { ScreenState, ScreenStateSkeleton } from '../../components/ui/ScreenState';
@@ -12,7 +13,7 @@ import { ExpenseList } from '../../components/dashboard/ExpenseList';
 import { FadeInView } from '../../components/dashboard/FadeInView';
 import { OverviewCard } from '../../components/dashboard/OverviewCard';
 import { SavingsPreviewCard } from '../../components/dashboard/SavingsPreviewCard';
-import { colors, spacing } from '../../constants/theme';
+import { colors, iconSizes, radius, spacing } from '../../constants/theme';
 import { supabase } from '../../lib/supabase';
 import { DEFAULT_DAILY_BUDGET, getDailyBudget, getMonthlyIncome } from '../../lib/settings';
 import { useAuth } from '../../hooks/useAuth';
@@ -176,7 +177,6 @@ export default function HomeScreen() {
   const hour = now.getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const firstName = user?.name?.trim().split(/\s+/)[0];
-  const heading = firstName ? `${greeting}, ${firstName}` : greeting;
   const dateLabel = now.toLocaleDateString('en-IN', {
     weekday: 'long',
     day: 'numeric',
@@ -186,13 +186,16 @@ export default function HomeScreen() {
   return (
     <ThemedScreen
       scroll
-      contentContainerStyle={{ paddingBottom: spacing.massive + 92 }}
+      contentContainerStyle={styles.content}
     >
       <FadeInView delay={0}>
         <View style={styles.header}>
           <View style={styles.headerMeta}>
+            <ThemedText variant="caption" color={colors.textMuted}>
+              {greeting}
+            </ThemedText>
             <ThemedText variant="heading" color={colors.text} numberOfLines={1}>
-              {heading}
+              {firstName ? `${firstName}!` : 'there!'}
             </ThemedText>
             <ThemedText variant="caption" color={colors.textMuted}>
               {dateLabel}
@@ -235,8 +238,26 @@ export default function HomeScreen() {
         )}
       </FadeInView>
 
-      <GlassSection title="Today's expenses">
-        <FadeInView delay={120}>
+      <FadeInView delay={110} style={styles.quickActionsBlock}>
+        <View style={styles.sectionHeader}>
+          <ThemedText variant="subheading" color={colors.text}>Quick actions</ThemedText>
+          <ThemedText variant="caption" color={colors.textMuted}>Make a move</ThemedText>
+        </View>
+        <View style={styles.quickActions}>
+          <QuickAction icon="add" label="Add expense" onPress={() => router.push('/expense/add')} />
+          <QuickAction icon="flag-outline" label="New goal" onPress={() => router.push('/savings/create')} />
+          <QuickAction icon="stats-chart-outline" label="Reports" onPress={() => router.push('/(tabs)/reports')} />
+        </View>
+      </FadeInView>
+
+      <View style={styles.transactionsSection}>
+        <View style={styles.sectionHeader}>
+          <ThemedText variant="subheading" color={colors.text}>Recent transactions</ThemedText>
+          <Pressable onPress={() => router.push('/(tabs)/calendar')} accessibilityRole="button">
+            <ThemedText variant="captionBold" color={colors.accentStrong}>See all</ThemedText>
+          </Pressable>
+        </View>
+        <FadeInView delay={150}>
           <View style={styles.chips}>
             <GlassChip label="You" selected={filter === 'you'} onPress={() => setFilter('you')} />
             {partnerId ? (
@@ -269,7 +290,7 @@ export default function HomeScreen() {
             )}
           </View>
         </FadeInView>
-      </GlassSection>
+      </View>
 
       <GlassSection title="Monthly overview">
         <FadeInView delay={180}>
@@ -321,7 +342,35 @@ export default function HomeScreen() {
   );
 }
 
+function QuickAction({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [styles.quickAction, pressed && styles.quickActionPressed]}
+    >
+      <View style={styles.quickIcon}>
+        <Ionicons name={icon} size={iconSizes.md} color={colors.accentStrong} />
+      </View>
+      <ThemedText variant="captionBold" color={colors.text} numberOfLines={1}>{label}</ThemedText>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
+  content: {
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.massive + 108,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -341,6 +390,45 @@ const styles = StyleSheet.create({
   },
   sectionGap: {
     marginTop: spacing.lg,
+  },
+  quickActionsBlock: {
+    marginTop: spacing.xxl,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  quickActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.xxl,
+  },
+  quickAction: {
+    flex: 1,
+    minHeight: 94,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  quickActionPressed: {
+    opacity: 0.72,
+    transform: [{ scale: 0.98 }],
+  },
+  quickIcon: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    backgroundColor: colors.accentSoft,
+  },
+  transactionsSection: {
+    marginBottom: spacing.xxl,
   },
   chips: {
     flexDirection: 'row',

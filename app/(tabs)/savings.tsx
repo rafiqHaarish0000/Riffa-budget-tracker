@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { FadeInView } from '../../components/dashboard/FadeInView';
+import { ProgressRing } from '../../components/savings/ProgressRing';
 import { GlassButton, GlassCard, GlassSection } from '../../components/ui/glass';
-import { ScreenState, ScreenStateSkeleton } from '../../components/ui/ScreenState';
+import { ScreenState } from '../../components/ui/ScreenState';
 import { ThemedScreen } from '../../components/ui/ThemedScreen';
 import { ThemedText } from '../../components/ui/ThemedText';
 import { colors, iconSizes, radius, spacing } from '../../constants/theme';
@@ -76,20 +78,20 @@ export default function SavingsScreen() {
     return (
       <ThemedScreen contentContainerStyle={{ paddingBottom: spacing.massive + 92 }}>
         <FadeInView delay={0}>
-          <View style={styles.headerBlock}>
-            <ThemedText variant="heading" color={colors.text}>
-              Savings
-            </ThemedText>
-            <ThemedText variant="caption" color={colors.textMuted}>
-              Build toward what matters to both of you.
-            </ThemedText>
+          <View style={styles.headerRow}>
+            <View style={styles.headerMeta}>
+              <ThemedText variant="heading" color={colors.text}>
+                Savings
+              </ThemedText>
+              <ThemedText variant="caption" color={colors.textMuted}>
+                Build toward what matters to both of you.
+              </ThemedText>
+            </View>
+            <View style={styles.skeletonNewGoal} />
           </View>
         </FadeInView>
         <FadeInView delay={60}>
-          <ScreenStateSkeleton tall style={styles.skeleton} />
-        </FadeInView>
-        <FadeInView delay={120}>
-          <ScreenStateSkeleton rows={3} />
+          <SavingsSkeleton />
         </FadeInView>
       </ThemedScreen>
     );
@@ -159,32 +161,56 @@ export default function SavingsScreen() {
       ) : (
         <>
           <FadeInView delay={60} style={styles.section}>
-            <GlassCard>
-              <ThemedText variant="caption" color={colors.textMuted}>
-                Saved
-              </ThemedText>
-              <ThemedText variant="title" color={colors.text} style={styles.savedValue}>
-                {formatCurrency(summary.totalSaved)}
-              </ThemedText>
-              <ThemedText variant="caption" color={colors.textMuted}>
-                of {formatCurrency(summary.totalTarget)}
-              </ThemedText>
-
-              <View style={styles.progressTrack}>
-                <View
-                  style={[styles.progressFill, { width: `${summary.progress}%` }]}
-                />
+            <LinearGradient
+              colors={['#17422F', '#0B201B']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.heroCard}
+            >
+              <View style={styles.heroTop}>
+                <View>
+                  <ThemedText variant="label" color={colors.textMuted} style={styles.heroEyebrow}>
+                    TOTAL SAVED
+                  </ThemedText>
+                  <ThemedText variant="body" color={colors.textSecondary}>
+                    across {goals.length} {goals.length === 1 ? 'goal' : 'goals'}
+                  </ThemedText>
+                </View>
+                <View style={styles.heroBadge}>
+                  <ThemedText variant="captionBold" color={colors.textInverse}>
+                    {Math.round(summary.progress)}%
+                  </ThemedText>
+                </View>
               </View>
 
-              <View style={styles.summaryFooter}>
-                <ThemedText variant="captionBold" color={colors.accentStrong}>
-                  {Math.round(summary.progress)}%
-                </ThemedText>
-                <ThemedText variant="caption" color={colors.textMuted}>
-                  {formatCurrency(summary.remaining)} to go
-                </ThemedText>
+              <ProgressRing
+                progress={summary.progress / 100}
+                size={188}
+                thickness={18}
+                centerValue={formatCurrency(summary.totalSaved)}
+                centerCaption={formatCurrency(summary.totalTarget)}
+              />
+
+              <View style={styles.heroStats}>
+                <View style={styles.heroStat}>
+                  <ThemedText variant="caption" color={colors.textMuted}>
+                    Goal target
+                  </ThemedText>
+                  <ThemedText variant="bodyMedium" color={colors.text}>
+                    {formatCurrency(summary.totalTarget)}
+                  </ThemedText>
+                </View>
+                <View style={styles.heroStatDivider} />
+                <View style={styles.heroStat}>
+                  <ThemedText variant="caption" color={colors.textMuted}>
+                    Remaining
+                  </ThemedText>
+                  <ThemedText variant="bodyMedium" color={colors.accentStrong}>
+                    {formatCurrency(summary.remaining)}
+                  </ThemedText>
+                </View>
               </View>
-            </GlassCard>
+            </LinearGradient>
           </FadeInView>
 
           <GlassSection title="Your goals">
@@ -234,43 +260,64 @@ function GoalCard({
       <FadeInView delay={60 + index * 40}>
         <GlassCard padding={spacing.lg}>
           <View style={styles.goalTop}>
-            <View style={styles.goalTitleRow}>
-              <ThemedText variant="subheading" color={colors.text} numberOfLines={1} style={styles.goalName}>
-                {goal.name}
+            <ProgressRing
+              progress={progress}
+              size={54}
+              thickness={6}
+              color={completed ? colors.accentStrong : colors.accent}
+              centerValue={`${Math.round(percent)}`}
+              centerCaption="%"
+            />
+            <View style={styles.goalBody}>
+              <View style={styles.goalTitleRow}>
+                <ThemedText variant="subheading" color={colors.text} numberOfLines={1} style={styles.goalName}>
+                  {goal.name}
+                </ThemedText>
+                {completed ? (
+                  <View style={styles.completeBadge}>
+                    <Ionicons name="checkmark-circle" size={iconSizes.xs} color={colors.accentStrong} />
+                    <ThemedText variant="label" color={colors.accentStrong}>
+                      Done
+                    </ThemedText>
+                  </View>
+                ) : null}
+              </View>
+              <ThemedText variant="bodyMedium" color={colors.text}>
+                {formatCurrency(goal.current_amount)}
+                <ThemedText variant="caption" color={colors.textMuted}>
+                  {' '}/ {formatCurrency(goal.target_amount)}
+                </ThemedText>
               </ThemedText>
-              {completed ? (
-                <View style={styles.completeBadge}>
-                  <Ionicons name="checkmark-circle" size={iconSizes.xs} color={colors.accentStrong} />
-                  <ThemedText variant="label" color={colors.accentStrong}>
-                    Complete
-                  </ThemedText>
-                </View>
-              ) : null}
+              <ThemedText variant="caption" color={colors.textMuted}>
+                {completed ? 'Goal reached' : `${formatCurrency(remaining)} to go`}
+                {goal.target_date ? ` · ${formatDateLong(goal.target_date)}` : ''}
+              </ThemedText>
             </View>
-            <ThemedText variant="captionBold" color={colors.accentStrong}>
-              {Math.round(percent)}%
-            </ThemedText>
           </View>
-
-          <View style={styles.goalProgressTrack}>
-            <View style={[styles.goalProgressFill, { width: `${progress * 100}%` }]} />
-          </View>
-
-          <View style={styles.goalAmountRow}>
-            <ThemedText variant="bodyMedium" color={colors.text}>
-              {formatCurrency(goal.current_amount)}
-              <ThemedText variant="bodyMedium" color={colors.textMuted}>
-                {' '}/ {formatCurrency(goal.target_amount)}
-              </ThemedText>
-            </ThemedText>
-          </View>
-          <ThemedText variant="caption" color={colors.textMuted}>
-            {completed ? 'Goal reached' : `${formatCurrency(remaining)} to go`}
-            {goal.target_date ? ` · Target: ${formatDateLong(goal.target_date)}` : ''}
-          </ThemedText>
         </GlassCard>
       </FadeInView>
     </Pressable>
+  );
+}
+
+function SavingsSkeleton() {
+  return (
+    <View>
+      <View style={styles.skeletonHero}>
+        <View style={styles.skeletonHeroHead}>
+          <View style={styles.skeletonText} />
+          <View style={styles.skeletonBadge} />
+        </View>
+        <View style={styles.skeletonRing} />
+        <View style={styles.skeletonStats}>
+          <View style={styles.skeletonStat} />
+          <View style={styles.skeletonStat} />
+        </View>
+      </View>
+      <View style={styles.skeletonCard} />
+      <View style={styles.skeletonCard} />
+      <View style={styles.skeletonCard} />
+    </View>
   );
 }
 
@@ -295,27 +342,54 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: spacing.xxl,
   },
-  savedValue: {
-    marginTop: spacing.xs,
+  heroCard: {
+    borderRadius: radius.xl,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+    shadowColor: '#000',
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
+  },
+  heroTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: spacing.xl,
+  },
+  heroEyebrow: {
+    letterSpacing: 1,
     marginBottom: spacing.xxs,
   },
-  progressTrack: {
-    height: 8,
-    borderRadius: radius.pill,
-    backgroundColor: colors.border,
-    overflow: 'hidden',
-    marginTop: spacing.md,
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: radius.pill,
+  heroBadge: {
     backgroundColor: colors.accent,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
   },
-  summaryFooter: {
+  heroStats: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: spacing.sm,
+    justifyContent: 'space-around',
+    width: '100%',
+    marginTop: spacing.xl,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.md,
+  },
+  heroStat: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  heroStatDivider: {
+    width: StyleSheet.hairlineWidth,
+    height: 32,
+    backgroundColor: colors.borderStrong,
   },
   goalsList: {
     gap: spacing.md,
@@ -329,15 +403,16 @@ const styles = StyleSheet.create({
   goalTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    marginBottom: spacing.md,
+    gap: spacing.lg,
+  },
+  goalBody: {
+    flex: 1,
   },
   goalTitleRow: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    marginBottom: spacing.xxs,
   },
   goalName: {
     flexShrink: 1,
@@ -351,21 +426,61 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xxs,
   },
-  goalProgressTrack: {
-    height: 8,
-    borderRadius: radius.pill,
-    backgroundColor: colors.border,
-    overflow: 'hidden',
+  skeletonNewGoal: {
+    width: 92,
+    height: 44,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
   },
-  goalProgressFill: {
-    height: '100%',
-    borderRadius: radius.pill,
-    backgroundColor: colors.accent,
-  },
-  goalAmountRow: {
-    marginTop: spacing.md,
-  },
-  skeleton: {
+  skeletonHero: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    alignItems: 'center',
     marginBottom: spacing.lg,
+  },
+  skeletonHeroHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: spacing.lg,
+  },
+  skeletonText: {
+    width: 120,
+    height: 16,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceStrong,
+  },
+  skeletonBadge: {
+    width: 64,
+    height: 26,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceStrong,
+  },
+  skeletonRing: {
+    width: 188,
+    height: 188,
+    borderRadius: 94,
+    borderWidth: 18,
+    borderColor: colors.surfaceStrong,
+  },
+  skeletonStats: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+    marginTop: spacing.xl,
+    width: '100%',
+  },
+  skeletonStat: {
+    flex: 1,
+    height: 56,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceStrong,
+  },
+  skeletonCard: {
+    height: 96,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    marginBottom: spacing.md,
   },
 });

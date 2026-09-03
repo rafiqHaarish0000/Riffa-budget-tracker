@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { FadeInView } from '../../components/dashboard/FadeInView';
@@ -318,8 +319,35 @@ export default function ProfileScreen() {
 
   return (
     <ThemedScreen scroll keyboardShouldPersistTaps="handled">
+      <View style={styles.titleRow}>
+        <Pressable
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/(tabs)/home');
+            }
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          hitSlop={8}
+          style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
+        >
+          <Ionicons name="chevron-back" size={iconSizes.md} color={colors.text} />
+        </Pressable>
+        <ThemedText variant="heading" color={colors.text} style={styles.headerTitle}>
+          Profile
+        </ThemedText>
+      </View>
+
       <FadeInView delay={0}>
-        <GlassCard style={styles.identityCard}>
+        <LinearGradient
+          colors={['#17422F', '#0B201B']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.identityCard}
+        >
+          <View style={styles.glowTop} />
           <Pressable
             onPress={handlePickPhoto}
             accessibilityRole="button"
@@ -327,8 +355,8 @@ export default function ProfileScreen() {
             disabled={uploading}
             style={styles.avatarPressable}
           >
-            <View style={styles.avatarWrap}>
-              <GlassAvatar uri={user.profile_image_url} name={displayName} size={92} />
+            <View style={styles.avatarRing}>
+              <GlassAvatar uri={user.profile_image_url} name={displayName} size={104} />
               {uploading ? (
                 <View style={styles.avatarBadge}>
                   <ActivityIndicator size="small" color={colors.textInverse} />
@@ -339,20 +367,26 @@ export default function ProfileScreen() {
                 </View>
               )}
             </View>
-            <ThemedText variant="captionBold" color={colors.accentStrong} style={styles.changePhoto}>
-              {uploading ? 'Updating photo…' : 'Change Photo'}
-            </ThemedText>
+            <View style={styles.changePhoto}>
+              <Ionicons name="camera-outline" size={iconSizes.xs} color={colors.accentStrong} />
+              <ThemedText variant="captionBold" color={colors.accentStrong}>
+                {uploading ? 'Updating photo…' : 'Change Photo'}
+              </ThemedText>
+            </View>
           </Pressable>
 
           <ThemedText variant="heading" color={colors.text} style={styles.displayName} numberOfLines={1}>
             {displayName}
           </ThemedText>
           {email ? (
-            <ThemedText variant="caption" color={colors.textMuted} numberOfLines={1}>
-              {email}
-            </ThemedText>
+            <View style={styles.emailRow}>
+              <Ionicons name="mail-outline" size={iconSizes.xs} color={colors.textMuted} />
+              <ThemedText variant="caption" color={colors.textMuted} numberOfLines={1}>
+                {email}
+              </ThemedText>
+            </View>
           ) : null}
-        </GlassCard>
+        </LinearGradient>
         {photoError ? (
           <ThemedText variant="caption" color={colors.danger} style={styles.inlineError}>
             {photoError}
@@ -360,7 +394,7 @@ export default function ProfileScreen() {
         ) : null}
       </FadeInView>
 
-      <FadeInView delay={60}>
+      <FadeInView delay={60} style={styles.sectionGap}>
         <GlassSection title="Personal Information">
           <GlassCard padding={spacing.lg}>
             <GlassInput
@@ -513,22 +547,74 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xl,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+  },
+  backButtonPressed: {
+    opacity: 0.7,
+  },
+  headerTitle: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    pointerEvents: 'none',
+  },
+  sectionGap: {
+    marginTop: spacing.xl,
+  },
   identityCard: {
     alignItems: 'center',
     paddingVertical: spacing.xxxl,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.xl,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+    shadowColor: '#000',
+    shadowOpacity: 0.4,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 8,
+  },
+  glowTop: {
+    position: 'absolute',
+    top: -60,
+    alignSelf: 'center',
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: 'rgba(85, 214, 177, 0.12)',
   },
   avatarPressable: {
     alignItems: 'center',
   },
-  avatarWrap: {
+  avatarRing: {
     position: 'relative',
+    padding: 4,
+    borderRadius: radius.pill,
+    borderWidth: 2,
+    borderColor: 'rgba(85, 214, 177, 0.6)',
   },
   avatarBadge: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 30,
-    height: 30,
+    bottom: 4,
+    right: 4,
+    width: 32,
+    height: 32,
     borderRadius: radius.pill,
     backgroundColor: colors.accent,
     borderWidth: 2,
@@ -538,10 +624,19 @@ const styles = StyleSheet.create({
   },
   changePhoto: {
     marginTop: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
   },
   displayName: {
     marginTop: spacing.lg,
     marginBottom: spacing.xxs,
+    paddingHorizontal: spacing.md,
+  },
+  emailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
     paddingHorizontal: spacing.md,
   },
   inlineError: {

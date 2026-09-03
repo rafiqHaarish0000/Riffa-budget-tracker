@@ -18,6 +18,7 @@ type GlassButtonProps = {
   loadingTitle?: string;
   style?: StyleProp<ViewStyle>;
   leading?: React.ReactNode;
+  trailing?: React.ReactNode;
 };
 
 export function GlassButton({
@@ -29,6 +30,7 @@ export function GlassButton({
   loadingTitle,
   style,
   leading,
+  trailing,
 }: GlassButtonProps) {
   const palette = {
     primary: { bg: colors.accent, fg: colors.textInverse, border: colors.accent },
@@ -65,6 +67,7 @@ export function GlassButton({
         <View style={styles.content}>
           {leading}
           <ThemedText variant="bodyMedium" color={palette.fg}>{title}</ThemedText>
+          {trailing}
         </View>
       )}
     </Pressable>

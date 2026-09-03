@@ -4,11 +4,12 @@ import { StyleSheet, View, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FloatingAddButton } from '../../components/navigation/FloatingAddButton';
 import { RequireAuth } from '../../components/RouteGuard';
-import { colors, iconSizes, spacing, typography } from '../../constants/theme';
+import { colors, iconSizes, radius, shadows, spacing, typography } from '../../constants/theme';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
-const TAB_BAR_BASE_HEIGHT = 64;
+const TAB_BAR_BASE_HEIGHT = 76;
+const TAB_BAR_GUTTER = 10;
 
 function tabIcon(focused: IconName, unfocused: IconName) {
   return function TabIcon({ color, focused: isFocused }: { color: ColorValue; focused: boolean }) {
@@ -22,7 +23,7 @@ function AddExpenseOverlay({ onPress }: { onPress?: () => void }) {
   return (
     <View
       pointerEvents="box-none"
-      style={[styles.overlay, { bottom: insets.bottom + TAB_BAR_BASE_HEIGHT - 20 }]}
+      style={[styles.overlay, { bottom: Math.max(insets.bottom, TAB_BAR_GUTTER) + TAB_BAR_BASE_HEIGHT - 22 }]}
     >
       <FloatingAddButton onPress={onPress} />
     </View>
@@ -38,9 +39,9 @@ export default function TabsLayout() {
         <Tabs
           screenOptions={{
             headerShown: false,
-            tabBarActiveTintColor: colors.accent,
+            tabBarActiveTintColor: colors.white,
             tabBarInactiveTintColor: colors.textMuted,
-            tabBarStyle: [styles.tabBar, { height: TAB_BAR_BASE_HEIGHT + insets.bottom }],
+            tabBarStyle: [styles.tabBar, { height: TAB_BAR_BASE_HEIGHT, bottom: Math.max(insets.bottom, TAB_BAR_GUTTER) }],
             tabBarItemStyle: styles.tabBarItem,
             tabBarLabelStyle: styles.tabBarLabel,
             tabBarHideOnKeyboard: true,
@@ -94,17 +95,24 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     position: 'absolute',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    backgroundColor: colors.surface,
-    paddingTop: spacing.xs,
-    paddingBottom: 0,
-    elevation: 0,
+    left: TAB_BAR_GUTTER,
+    right: TAB_BAR_GUTTER,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderStrong,
+    borderRadius: radius.xxl,
+    backgroundColor: '#07120E',
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    ...shadows.float,
   },
   tabBarItem: {
     justifyContent: 'center',
+    borderRadius: radius.md,
+    marginHorizontal: 2,
   },
   tabBarLabel: {
     ...typography.label,
+    marginTop: 2,
   },
 });

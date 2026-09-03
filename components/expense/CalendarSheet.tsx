@@ -34,9 +34,11 @@ export function CalendarSheet({ selected, onSelect }: CalendarSheetProps) {
 
   return (
     <View>
-      <ThemedText variant="subheading" color={colors.text} style={styles.title}>
-        Select date
-      </ThemedText>
+      <View style={styles.titleRow}>
+        <ThemedText variant="subheading" color={colors.text} style={styles.title}>
+          Select date
+        </ThemedText>
+      </View>
 
       <View style={styles.header}>
         <Pressable
@@ -66,7 +68,7 @@ export function CalendarSheet({ selected, onSelect }: CalendarSheetProps) {
 
       <View style={styles.weekRow}>
         {WEEKDAYS.map((day, index) => (
-          <ThemedText key={`${day}-${index}`} variant="label" color={colors.textMuted} style={styles.weekCell}>
+          <ThemedText key={`${day}-${index}`} variant="captionBold" color={colors.textSecondary} style={styles.weekCell}>
             {day}
           </ThemedText>
         ))}
@@ -102,6 +104,7 @@ export function CalendarSheet({ selected, onSelect }: CalendarSheetProps) {
                 <ThemedText
                   variant="bodyMedium"
                   color={isSelected ? colors.textInverse : colors.text}
+                  style={styles.dayText}
                 >
                   {day}
                 </ThemedText>
@@ -126,8 +129,13 @@ export function CalendarSheet({ selected, onSelect }: CalendarSheetProps) {
 }
 
 const styles = StyleSheet.create({
-  title: {
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: spacing.lg,
+  },
+  title: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -171,6 +179,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  dayText: {
+    fontSize: 17,
+    fontWeight: '600',
   },
   daySelected: {
     backgroundColor: colors.accent,

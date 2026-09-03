@@ -54,7 +54,7 @@ export function GlassModal({
           accessibilityRole="none"
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
-          style={styles.backdrop}
+          style={[styles.backdrop, sheet ? styles.backdropSheet : styles.backdropCenter]}
           onPress={onClose}
         >
           <Pressable
@@ -98,14 +98,21 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: colors.overlay,
+  },
+  backdropSheet: {
     justifyContent: 'flex-end',
+  },
+  backdropCenter: {
+    justifyContent: 'center',
   },
   sheet: {
     width: '100%',
     backgroundColor: 'transparent',
   },
   centered: {
-    marginHorizontal: spacing.xl,
+    width: '90%',
+    maxWidth: 420,
+    alignSelf: 'center',
     borderRadius: radius.xxl,
     overflow: 'hidden',
   },
@@ -123,8 +130,7 @@ const styles = StyleSheet.create({
   blurCenter: {
     borderRadius: radius.xxl,
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xxl,
-    paddingBottom: spacing.xxl,
+    paddingVertical: spacing.xxl,
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,

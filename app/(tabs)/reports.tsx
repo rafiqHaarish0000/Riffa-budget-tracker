@@ -3,8 +3,9 @@ import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { CategoryIcon } from '../../components/dashboard/CategoryIcon';
 import { FadeInView } from '../../components/dashboard/FadeInView';
+import { DonutSegmentChart } from '../../components/expense/DonutSegmentChart';
 import { GlassCard, GlassChip, GlassSection, GlassAvatar } from '../../components/ui/glass';
-import { ScreenState, ScreenStateSkeleton } from '../../components/ui/ScreenState';
+import { ScreenState } from '../../components/ui/ScreenState';
 import { ThemedScreen } from '../../components/ui/ThemedScreen';
 import { ThemedText } from '../../components/ui/ThemedText';
 import { colors, iconSizes, radius, spacing } from '../../constants/theme';
@@ -232,10 +233,7 @@ export default function ReportsScreen() {
           </View>
         </FadeInView>
         <FadeInView delay={60}>
-          <ScreenStateSkeleton tall style={styles.skeleton} />
-        </FadeInView>
-        <FadeInView delay={120}>
-          <ScreenStateSkeleton rows={3} />
+          <ReportSkeleton />
         </FadeInView>
       </ThemedScreen>
     );
@@ -311,24 +309,53 @@ export default function ReportsScreen() {
       ) : (
         <>
           <FadeInView delay={80} style={styles.section}>
-            <GlassCard>
-              <ThemedText variant="caption" color={colors.textMuted}>
-                Total spent
-              </ThemedText>
-              <ThemedText variant="title" color={colors.text} style={styles.totalValue}>
-                {formatCurrency(total)}
-              </ThemedText>
-              <View style={styles.summaryRow}>
-                <View style={styles.summaryItem}>
+            <GlassCard style={styles.heroCard}>
+              <View style={styles.heroHead}>
+                <View>
                   <ThemedText variant="caption" color={colors.textMuted}>
+                    TOTAL SPENT
+                  </ThemedText>
+                  <ThemedText variant="heading" color={colors.text}>
+                    {formatCurrency(total)}
+                  </ThemedText>
+                </View>
+                <View style={styles.heroPill}>
+                  <ThemedText variant="captionBold" color={colors.textSecondary}>
                     {count} {count === 1 ? 'expense' : 'expenses'}
                   </ThemedText>
                 </View>
-                <View style={styles.summaryItemRight}>
-                  <ThemedText variant="caption" color={colors.textMuted}>
-                    {formatCurrency(Math.round(average))} average
-                  </ThemedText>
-                </View>
+              </View>
+
+              <DonutSegmentChart
+                segments={categoryBreakdown.map((item) => ({
+                  key: item.category,
+                  value: item.total,
+                  color: CATEGORY_COLORS[item.category] ?? colors.accent,
+                }))}
+                size={230}
+                thickness={30}
+                centerTitle="Avg / expense"
+                centerValue={formatCurrency(Math.round(average))}
+                centerCaption={formatCurrency(total)}
+              />
+
+              <View style={styles.heroLegend}>
+                {categoryBreakdown.slice(0, 4).map((item) => (
+                  <View key={item.category} style={styles.legendItem}>
+                    <View
+                      style={[
+                        styles.legendDot,
+                        { backgroundColor: CATEGORY_COLORS[item.category] ?? colors.accent },
+                      ]}
+                    />
+                    <ThemedText variant="caption" color={colors.textSecondary} numberOfLines={1}>
+                      {item.category}
+                    </ThemedText>
+                    <ThemedText variant="captionBold" color={colors.text}>
+                      {Math.round(item.percent)}%
+                    </ThemedText>
+                  </View>
+                ))}
               </View>
             </GlassCard>
           </FadeInView>
@@ -556,7 +583,123 @@ export default function ReportsScreen() {
   );
 }
 
+function ReportSkeleton() {
+  return (
+    <View>
+      <View style={styles.skeletonHero}>
+        <View style={styles.skeletonHeroHead}>
+          <View style={styles.skeletonShort} />
+          <View style={styles.skeletonPill} />
+        </View>
+        <View style={styles.skeletonRing}>
+          <View style={styles.skeletonRingEdge} />
+          <View style={styles.skeletonHub}>
+            <View style={styles.skeletonHubLine} />
+            <View style={styles.skeletonHubLineShort} />
+          </View>
+        </View>
+        <View style={styles.skeletonLegend}>
+          <View style={styles.skeletonLegendItem} />
+          <View style={styles.skeletonLegendItem} />
+          <View style={styles.skeletonLegendItem} />
+        </View>
+      </View>
+      <View style={styles.skeletonCard} />
+      <View style={styles.skeletonCard} />
+      <View style={styles.skeletonCard} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  skeletonHero: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  skeletonHeroHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: spacing.lg,
+  },
+  skeletonShort: {
+    width: 120,
+    height: 18,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceStrong,
+  },
+  skeletonPill: {
+    width: 84,
+    height: 24,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceStrong,
+  },
+  skeletonRing: {
+    width: 230,
+    height: 230,
+    borderRadius: 115,
+    borderWidth: 30,
+    borderColor: colors.surfaceStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
+  },
+  skeletonRingEdge: {
+    position: 'absolute',
+    top: -34,
+    left: -34,
+    right: -34,
+    bottom: -34,
+    borderRadius: 149,
+    borderWidth: 2,
+    borderColor: colors.border,
+  },
+  skeletonHub: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surfaceStrong,
+  },
+  skeletonHubLine: {
+    width: 80,
+    height: 22,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceStrong,
+  },
+  skeletonHubLineShort: {
+    width: 60,
+    height: 14,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceStrong,
+  },
+  skeletonLegend: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.lg,
+  },
+  skeletonLegendItem: {
+    width: 84,
+    height: 14,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceStrong,
+  },
+  skeletonCard: {
+    height: 120,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    marginBottom: spacing.lg,
+  },
   header: {
     marginBottom: spacing.lg,
   },
@@ -569,19 +712,42 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.lg,
   },
-  totalValue: {
-    marginTop: spacing.xs,
+  heroCard: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
   },
-  summaryRow: {
+  heroHead: {
     flexDirection: 'row',
-    marginTop: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: spacing.lg,
   },
-  summaryItem: {
-    flex: 1,
+  heroPill: {
+    backgroundColor: colors.accentSoft,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
   },
-  summaryItemRight: {
-    flex: 1,
-    alignItems: 'flex-end',
+  heroLegend: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    columnGap: spacing.xl,
+    rowGap: spacing.md,
+    marginTop: spacing.xl,
+    width: '100%',
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    minWidth: 96,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: radius.pill,
   },
   divider: {
     height: StyleSheet.hairlineWidth,
@@ -694,8 +860,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xxs,
-  },
-  skeleton: {
-    marginBottom: spacing.lg,
   },
 });
