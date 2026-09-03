@@ -15,13 +15,14 @@ import { TypeSelector } from '../../components/expense/TypeSelector';
 import { GlassButton, GlassCard, GlassInput, GlassModal, GlassSection } from '../../components/ui/glass';
 import { ThemedScreen } from '../../components/ui/ThemedScreen';
 import { ThemedText } from '../../components/ui/ThemedText';
+import { ScreenState, ScreenStateSkeleton } from '../../components/ui/ScreenState';
 import { colors, spacing } from '../../constants/theme';
 import { useAuth } from '../../hooks/useAuth';
 import { useExpenses } from '../../hooks/useExpenses';
 import { useFamily } from '../../hooks/useFamily';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import { formatCurrency } from '../../utils/format';
-import { formatDateLong } from '../../utils/date';
+import { formatDateLong, formatDateTime } from '../../utils/date';
 import {
   CONFIG_ERROR,
   mapActionError,
@@ -63,7 +64,9 @@ export default function ExpenseDetailsScreen() {
     const { error: err } = await getExpense(id);
     setExpenseLoading(false);
     if (err) {
-      setError(err.message);
+      // Never surface the raw Supabase error (e.g. PGRST rows) to the user;
+      // a failing single-row fetch is either missing or inaccessible.
+      setError('This expense may have been removed or you may not have access to it.');
     }
   }, [id, getExpense]);
 
@@ -179,11 +182,7 @@ export default function ExpenseDetailsScreen() {
   if (expenseLoading) {
     return (
       <ThemedScreen>
-        <View style={styles.centered}>
-          <ThemedText variant="caption" color={colors.textMuted}>
-            Loading expense…
-          </ThemedText>
-        </View>
+        <ScreenStateSkeleton rows={3} tall style={styles.loadingSkeleton} />
       </ThemedScreen>
     );
   }
@@ -191,20 +190,15 @@ export default function ExpenseDetailsScreen() {
   if (!expense) {
     return (
       <ThemedScreen>
-        <View style={styles.centered}>
-          <ThemedText variant="heading" color={colors.text}>
-            Expense not found
-          </ThemedText>
-          <ThemedText variant="body" color={colors.textSecondary} style={styles.subtitle}>
-            {error ?? 'This expense may have been removed or you may not have access to it.'}
-          </ThemedText>
-          <GlassButton
-            title="Go back"
-            variant="secondary"
-            onPress={() => router.back()}
-            style={styles.goBackButton}
-          />
-        </View>
+        <ScreenState
+          kind="error"
+          icon="receipt-outline"
+          title="Expense not found"
+          message={error ?? 'This expense may have been removed or you may not have access to it.'}
+          actionLabel="Go back"
+          actionVariant="secondary"
+          onAction={() => router.back()}
+        />
       </ThemedScreen>
     );
   }
@@ -267,7 +261,7 @@ export default function ExpenseDetailsScreen() {
               <View style={styles.row}>
                 <ThemedText variant="body" color={colors.textSecondary}>Created</ThemedText>
                 <ThemedText variant="body" color={colors.text}>
-                  {formatDateLong(expense.created_at)}
+                  {formatDateTime(expense.created_at)}
                 </ThemedText>
               </View>
             </GlassSection>
@@ -290,6 +284,7 @@ export default function ExpenseDetailsScreen() {
                 onPress={() => setDeleteConfirmOpen(true)}
                 accessibilityRole="button"
                 accessibilityLabel="Delete expense"
+                style={styles.deleteControl}
               >
                 <ThemedText variant="caption" color={colors.danger} style={styles.deleteText}>
                   Delete expense
@@ -421,23 +416,11 @@ export default function ExpenseDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.xl,
+  loadingSkeleton: {
+    paddingTop: spacing.lg,
   },
   section: {
     marginBottom: spacing.xxl,
-  },
-  subtitle: {
-    textAlign: 'center',
-    marginTop: spacing.sm,
-  },
-  goBackButton: {
-    marginTop: spacing.xl,
-    minWidth: 44,
-    minHeight: 44,
   },
   summaryCard: {
     flexDirection: 'row',
@@ -474,6 +457,11 @@ const styles = StyleSheet.create({
   editButton: {
     marginTop: spacing.sm,
   },
+  deleteControl: {
+    alignItems: 'center',
+    minHeight: 44,
+    justifyContent: 'center',
+  },
   deleteText: {
     textAlign: 'center',
     marginTop: spacing.md,
@@ -494,8 +482,5 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     minWidth: 100,
-  },
-  sectionTitle: {
-    marginBottom: spacing.md,
   },
 });

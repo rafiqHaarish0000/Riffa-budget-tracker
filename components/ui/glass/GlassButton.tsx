@@ -2,12 +2,12 @@ import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
-  Text,
   View,
   type ViewStyle,
   type StyleProp,
 } from 'react-native';
-import { colors, radius, shadows, spacing, typography } from '../../../constants/theme';
+import { colors, radius, shadows, spacing } from '../../../constants/theme';
+import { ThemedText } from '../ThemedText';
 
 type GlassButtonProps = {
   title: string;
@@ -56,7 +56,7 @@ export function GlassButton({
         loadingTitle ? (
           <View style={styles.content}>
             <ActivityIndicator color={palette.fg} />
-            <Text style={[styles.label, { color: palette.fg }]}>{loadingTitle}</Text>
+            <ThemedText variant="bodyMedium" color={palette.fg}>{loadingTitle}</ThemedText>
           </View>
         ) : (
           <ActivityIndicator color={palette.fg} />
@@ -64,7 +64,7 @@ export function GlassButton({
       ) : (
         <View style={styles.content}>
           {leading}
-          <Text style={[styles.label, { color: palette.fg }]}>{title}</Text>
+          <ThemedText variant="bodyMedium" color={palette.fg}>{title}</ThemedText>
         </View>
       )}
     </Pressable>
@@ -85,9 +85,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-  },
-  label: {
-    ...typography.bodyMedium,
   },
   pressed: {
     opacity: 0.85,

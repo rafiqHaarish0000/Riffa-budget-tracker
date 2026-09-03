@@ -1,18 +1,18 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { CategoryIcon } from '../../components/dashboard/CategoryIcon';
 import { FadeInView } from '../../components/dashboard/FadeInView';
-import { GlassButton, GlassCard, GlassChip, GlassSection } from '../../components/ui/glass';
+import { GlassCard, GlassChip, GlassSection } from '../../components/ui/glass';
+import { ScreenState, ScreenStateSkeleton } from '../../components/ui/ScreenState';
 import { ThemedScreen } from '../../components/ui/ThemedScreen';
 import { ThemedText } from '../../components/ui/ThemedText';
 import { colors, iconSizes, radius, spacing } from '../../constants/theme';
 import { useAuth } from '../../hooks/useAuth';
 import { useExpenses, type ExpenseDateRange } from '../../hooks/useExpenses';
 import { formatDateLabel, toISODate } from '../../utils/date';
-import { formatCurrency } from '../../utils/format';
-import type { Expense, ExpenseCategory } from '../../types/expense';
+import { formatCurrency, sumExpenses } from '../../utils/format';
+import type { ExpenseCategory } from '../../types/expense';
 
 type Period = 'month' | 'lastMonth' | 'threeMonths' | 'year';
 
@@ -77,10 +77,6 @@ function periodRange(period: Period): ExpenseDateRange {
     default:
       return { start: `${year}-01-01`, end: today };
   }
-}
-
-function sumExpenses(items: Expense[]): number {
-  return items.reduce((acc, item) => acc + (item.amount ?? 0), 0);
 }
 
 export default function ReportsScreen() {
@@ -197,10 +193,10 @@ export default function ReportsScreen() {
           </View>
         </FadeInView>
         <FadeInView delay={60}>
-          <View style={styles.skeletonCard} />
+          <ScreenStateSkeleton tall style={styles.skeleton} />
         </FadeInView>
         <FadeInView delay={120}>
-          <View style={styles.skeletonCardTall} />
+          <ScreenStateSkeleton rows={3} />
         </FadeInView>
       </ThemedScreen>
     );
@@ -220,20 +216,14 @@ export default function ReportsScreen() {
           </View>
         </FadeInView>
         <FadeInView delay={60}>
-          <GlassCard style={styles.stateCard}>
-            <ThemedText variant="subheading" color={colors.text}>
-              Unable to load reports
-            </ThemedText>
-            <ThemedText variant="caption" color={colors.textMuted} style={styles.stateText}>
-              We couldn&apos;t load your spending data.
-            </ThemedText>
-            <GlassButton
-              title="Try again"
-              variant="secondary"
-              onPress={() => refetch()}
-              style={styles.retryButton}
-            />
-          </GlassCard>
+          <ScreenState
+            kind="error"
+            title="Unable to load reports"
+            message="We couldn&apos;t load your spending data."
+            actionLabel="Try again"
+            actionVariant="secondary"
+            onAction={() => refetch()}
+          />
         </FadeInView>
       </ThemedScreen>
     );
@@ -269,23 +259,15 @@ export default function ReportsScreen() {
 
       {!hasData ? (
         <FadeInView delay={80}>
-          <GlassCard style={styles.stateCard}>
-            <View style={styles.stateIcon}>
-              <Ionicons name="stats-chart-outline" size={iconSizes.xl} color={colors.accentStrong} />
-            </View>
-            <ThemedText variant="subheading" color={colors.text}>
-              Nothing to report yet
-            </ThemedText>
-            <ThemedText variant="caption" color={colors.textMuted} style={styles.stateText}>
-              Add an expense and your spending insights will appear here.
-            </ThemedText>
-            <GlassButton
-              title="Add Expense"
-              variant="secondary"
-              onPress={() => router.push('/expense/add')}
-              style={styles.retryButton}
-            />
-          </GlassCard>
+          <ScreenState
+            kind="empty"
+            icon="stats-chart-outline"
+            title="Nothing to report yet"
+            message="Add an expense and your spending insights will appear here."
+            actionLabel="Add Expense"
+            actionVariant="secondary"
+            onAction={() => router.push('/expense/add')}
+          />
         </FadeInView>
       ) : (
         <>
@@ -535,9 +517,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   barTrack: {
-    height: 6,
+    height: 8,
     borderRadius: radius.pill,
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.border,
     overflow: 'hidden',
     marginTop: spacing.sm,
   },
@@ -564,7 +546,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     overflow: 'hidden',
     marginTop: spacing.md,
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.border,
   },
   vsBarPersonal: {
     backgroundColor: colors.accent,
@@ -611,7 +593,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   rowPressed: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
   expenseMeta: {
     flex: 1,
@@ -627,36 +609,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xxs,
   },
-  stateCard: {
-    alignItems: 'center',
-    paddingVertical: spacing.xxxl,
-  },
-  stateIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  stateText: {
-    textAlign: 'center',
-    marginTop: spacing.xs,
-  },
-  retryButton: {
-    marginTop: spacing.lg,
-    minWidth: 140,
-  },
-  skeletonCard: {
-    height: 120,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
+  skeleton: {
     marginBottom: spacing.lg,
-  },
-  skeletonCardTall: {
-    height: 260,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
   },
 });

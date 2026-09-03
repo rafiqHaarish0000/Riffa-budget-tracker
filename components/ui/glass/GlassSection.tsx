@@ -1,6 +1,7 @@
-import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type ViewStyle } from 'react-native';
 import type { PropsWithChildren } from 'react';
-import { colors, spacing, typography } from '../../../constants/theme';
+import { colors, spacing } from '../../../constants/theme';
+import { ThemedText } from '../ThemedText';
 
 type GlassSectionProps = PropsWithChildren<{
   title?: string;
@@ -10,7 +11,7 @@ type GlassSectionProps = PropsWithChildren<{
 export function GlassSection({ title, style, children }: GlassSectionProps) {
   return (
     <View style={[styles.section, style]}>
-      {title ? <Text style={styles.title}>{title}</Text> : null}
+      {title ? <ThemedText variant="subheading" color={colors.text} style={styles.title}>{title}</ThemedText> : null}
       {children}
     </View>
   );
@@ -21,8 +22,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xxl,
   },
   title: {
-    ...typography.subheading,
-    color: colors.text,
     marginBottom: spacing.md,
   },
 });

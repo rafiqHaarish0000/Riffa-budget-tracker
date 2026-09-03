@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { notifyFamily } from '../lib/notifications';
-import { formatCurrency } from '../utils/format';
+import { notifySharedExpense } from '../lib/notifications';
 import type { Expense, NewExpenseInput } from '../types/expense';
 
 export type ExpenseDateRange = {
@@ -123,16 +122,10 @@ export function useExpenses(
       if (!insertError) {
         await loadExpenses();
         // Real event: a shared expense is visible to the whole family, so other
-        // members get notified. Personal expenses are never broadcast.
-        if (input.type === 'shared') {
-          const createdId = data?.id ?? null;
-          void notifyFamily({
-            type: 'shared_expense_added',
-            title: 'New shared expense',
-            message: `${formatCurrency(input.amount)} · ${input.category}`,
-            route: createdId ? `/expense/details?id=${createdId}` : null,
-            metadata: { amount: input.amount, category: input.category },
-          });
+        // members get notified. The scoped RPC derives recipients and content
+        // from the stored expense row; personal expenses are never broadcast.
+        if (input.type === 'shared' && data?.id) {
+          void notifySharedExpense(data.id);
         }
       }
       return { error: insertError ? new Error(insertError.message) : null };

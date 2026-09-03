@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   track: {
-    height: 6,
+    height: 8,
     borderRadius: radius.pill,
     backgroundColor: colors.border,
     marginTop: spacing.lg,

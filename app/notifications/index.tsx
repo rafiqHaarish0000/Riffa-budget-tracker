@@ -3,7 +3,8 @@ import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useCallback } from 'react';
 import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { FadeInView } from '../../components/dashboard/FadeInView';
-import { GlassButton, GlassCard } from '../../components/ui/glass';
+import { GlassCard } from '../../components/ui/glass';
+import { ScreenState, ScreenStateSkeleton } from '../../components/ui/ScreenState';
 import { ThemedScreen } from '../../components/ui/ThemedScreen';
 import { ThemedText } from '../../components/ui/ThemedText';
 import { colors, iconSizes, radius, spacing } from '../../constants/theme';
@@ -80,9 +81,7 @@ export default function NotificationsScreen() {
     return (
       <ThemedScreen scroll>
         <FadeInView delay={0}>
-          <View style={styles.skeletonRow} />
-          <View style={styles.skeletonRow} />
-          <View style={styles.skeletonRow} />
+          <ScreenStateSkeleton rows={3} />
         </FadeInView>
       </ThemedScreen>
     );
@@ -92,21 +91,15 @@ export default function NotificationsScreen() {
     return (
       <ThemedScreen scroll>
         <FadeInView delay={0}>
-          <View style={styles.centerBox}>
-            <Ionicons name="alert-circle-outline" size={iconSizes.xxl} color={colors.textMuted} />
-            <ThemedText variant="body" color={colors.textSecondary} style={styles.centerTitle}>
-              Couldn’t load notifications
-            </ThemedText>
-            <ThemedText variant="caption" color={colors.textMuted} style={styles.centerBody}>
-              Check your connection and try again.
-            </ThemedText>
-            <GlassButton
-              title="Try again"
-              variant="secondary"
-              onPress={() => refresh()}
-              style={styles.retryButton}
-            />
-          </View>
+          <ScreenState
+            kind="error"
+            contained={false}
+            title="Couldn’t load notifications"
+            message="Check your connection and try again."
+            actionLabel="Try again"
+            actionVariant="secondary"
+            onAction={() => refresh()}
+          />
         </FadeInView>
       </ThemedScreen>
     );
@@ -116,19 +109,13 @@ export default function NotificationsScreen() {
     return (
       <ThemedScreen scroll>
         <FadeInView delay={0}>
-          <View style={styles.centerBox}>
-            <Ionicons
-              name="notifications-off-outline"
-              size={iconSizes.xxl}
-              color={colors.textMuted}
-            />
-            <ThemedText variant="body" color={colors.textSecondary} style={styles.centerTitle}>
-              No notifications yet
-            </ThemedText>
-            <ThemedText variant="caption" color={colors.textMuted} style={styles.centerBody}>
-              When family activity happens, you’ll see it here.
-            </ThemedText>
-          </View>
+          <ScreenState
+            kind="empty"
+            contained={false}
+            icon="notifications-off-outline"
+            title="You're all caught up"
+            message="New shared activity will appear here."
+          />
         </FadeInView>
       </ThemedScreen>
     );
@@ -265,7 +252,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   pressed: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
   row: {
     flexDirection: 'row',
@@ -313,31 +300,10 @@ const styles = StyleSheet.create({
     marginTop: spacing.xxs,
   },
   dismiss: {
-    width: 28,
-    height: 28,
+    width: 40,
+    height: 40,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  centerBox: {
-    alignItems: 'center',
-    paddingTop: spacing.xxl,
-    gap: spacing.sm,
-  },
-  centerTitle: {
-    textAlign: 'center',
-  },
-  centerBody: {
-    textAlign: 'center',
-  },
-  retryButton: {
-    marginTop: spacing.md,
-    minWidth: 160,
-  },
-  skeletonRow: {
-    height: 92,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-    marginBottom: spacing.md,
   },
 });

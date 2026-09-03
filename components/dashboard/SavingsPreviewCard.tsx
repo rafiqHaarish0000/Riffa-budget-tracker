@@ -3,20 +3,24 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { colors, iconSizes, radius, spacing } from '../../constants/theme';
 import type { SavingsGoal } from '../../types/savings';
 import { formatCurrency } from '../../utils/format';
-import { GlassCard } from '../ui/glass';
+import { GlassButton, GlassCard } from '../ui/glass';
 import { ThemedText } from '../ui/ThemedText';
 
 type SavingsPreviewCardProps = {
   goals: SavingsGoal[];
   onViewAll: () => void;
+  onCreateGoal?: () => void;
 };
 
 const MAX_GOALS = 3;
 
-export function SavingsPreviewCard({ goals, onViewAll }: SavingsPreviewCardProps) {
+export function SavingsPreviewCard({ goals, onViewAll, onCreateGoal }: SavingsPreviewCardProps) {
   if (goals.length === 0) {
     return (
       <GlassCard style={styles.emptyCard}>
+        <View style={styles.emptyIcon}>
+          <Ionicons name="wallet-outline" size={iconSizes.xl} color={colors.accentStrong} />
+        </View>
         <ThemedText variant="subheading" color={colors.text}>
           No savings goals yet
         </ThemedText>
@@ -27,6 +31,9 @@ export function SavingsPreviewCard({ goals, onViewAll }: SavingsPreviewCardProps
         >
           Set your first goal to start building your future.
         </ThemedText>
+        {onCreateGoal ? (
+          <GlassButton title="Create a goal" onPress={onCreateGoal} style={styles.createButton} />
+        ) : null}
       </GlassCard>
     );
   }
@@ -85,6 +92,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.xxxl,
   },
+  emptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  createButton: {
+    marginTop: spacing.lg,
+    minWidth: 150,
+  },
   goal: {
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.sm,
@@ -100,7 +120,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   track: {
-    height: 6,
+    height: 8,
     borderRadius: radius.pill,
     backgroundColor: colors.border,
     overflow: 'hidden',
@@ -123,6 +143,6 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   pressed: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
 });

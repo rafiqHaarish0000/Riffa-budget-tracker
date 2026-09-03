@@ -14,6 +14,7 @@ import {
 } from '../../components/ui/glass';
 import { ThemedScreen } from '../../components/ui/ThemedScreen';
 import { ThemedText } from '../../components/ui/ThemedText';
+import { ScreenState, ScreenStateSkeleton } from '../../components/ui/ScreenState';
 import { colors, iconSizes, radius, spacing } from '../../constants/theme';
 import { useAuth } from '../../hooks/useAuth';
 import { isSupabaseConfigured, supabase } from '../../lib/supabase';
@@ -287,10 +288,10 @@ export default function ProfileScreen() {
     return (
       <ThemedScreen scroll>
         <FadeInView delay={0}>
-          <View style={styles.skeletonCard} />
+          <ScreenStateSkeleton tall style={styles.skeleton} />
         </FadeInView>
         <FadeInView delay={80}>
-          <View style={styles.skeletonTall} />
+          <ScreenStateSkeleton rows={3} />
         </FadeInView>
       </ThemedScreen>
     );
@@ -299,24 +300,16 @@ export default function ProfileScreen() {
   if (!user) {
     return (
       <ThemedScreen>
-        <View style={styles.stateWrap}>
-          <View style={styles.stateIcon}>
-            <Ionicons name="person-outline" size={iconSizes.xl} color={colors.accentStrong} />
-          </View>
-          <ThemedText variant="subheading" color={colors.text} style={styles.stateTitle}>
-            Unable to load your profile.
-          </ThemedText>
-          <ThemedText variant="caption" color={colors.textMuted} style={styles.stateText}>
-            Please try again.
-          </ThemedText>
-          <GlassButton
-            title="Try Again"
-            onPress={() => {
-              void refreshProfile();
-            }}
-            style={styles.stateButton}
-          />
-        </View>
+        <ScreenState
+          kind="error"
+          icon="person-outline"
+          title="Unable to load your profile"
+          message="Please try again."
+          actionLabel="Try Again"
+          onAction={() => {
+            void refreshProfile();
+          }}
+        />
       </ThemedScreen>
     );
   }
@@ -608,41 +601,7 @@ const styles = StyleSheet.create({
   modalButton: {
     flex: 1,
   },
-  stateWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-  },
-  stateIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  stateTitle: {
-    textAlign: 'center',
-  },
-  stateText: {
-    textAlign: 'center',
-    marginTop: spacing.xs,
-  },
-  stateButton: {
-    marginTop: spacing.lg,
-    minWidth: 160,
-  },
-  skeletonCard: {
-    height: 220,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
+  skeleton: {
     marginBottom: spacing.lg,
-  },
-  skeletonTall: {
-    height: 180,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
   },
 });

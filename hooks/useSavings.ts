@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { notifyFamily } from '../lib/notifications';
-import { formatCurrency } from '../utils/format';
+import { notifySavingsContribution } from '../lib/notifications';
 import type {
   NewSavingsContributionInput,
   NewSavingsGoalInput,
@@ -103,8 +102,26 @@ export function useSavings(familyId: string | null, userId: string | null): UseS
         return { error: new Error('Not authenticated.') };
       }
 
-      // Read the goal's current saved amount so the contribution is centralized
-      // here rather than computed ad hoc in the screen.
+      // Prefer the atomic, server-authoritative RPC. It derives `user_id` from
+      // auth.uid(), enforces the contribution -> goal -> family chain, and
+      // inserts + increments the goal balance in one transaction.
+      const { error: rpcError } = await supabase.rpc('add_savings_contribution', {
+        p_goal_id: input.goal_id,
+        p_amount: input.amount,
+        p_date: input.date,
+      });
+
+      if (!rpcError) {
+        await loadGoals();
+        // Real event: savings goals are family-scoped, so other members get
+        // notified about the contribution. Recipients/content are server-derived.
+        void notifySavingsContribution(input.goal_id, input.amount);
+        return { error: null };
+      }
+
+      // Fallback (e.g. the atomic RPC migration is not yet applied): keep the
+      // historical direct-insert behavior, guarded by RLS on the underlying
+      // tables. Never report the raw RPC error; surface a friendly message.
       const { data: goalData, error: goalError } = await supabase
         .from('savings_goals')
         .select('current_amount, name')
@@ -132,15 +149,7 @@ export function useSavings(familyId: string | null, userId: string | null): UseS
 
       if (!updateError) {
         await loadGoals();
-        // Real event: savings goals are family-scoped, so other members get
-        // notified about the contribution.
-        void notifyFamily({
-          type: 'savings_contribution_added',
-          title: 'Savings contribution',
-          message: `${formatCurrency(input.amount)} added to ${goalData?.name ?? 'a goal'}`,
-          route: `/savings/details?id=${input.goal_id}`,
-          metadata: { amount: input.amount, goal_id: input.goal_id },
-        });
+        void notifySavingsContribution(input.goal_id, input.amount);
       }
       return { error: updateError ? new Error(updateError.message) : null };
     },

@@ -1,3 +1,8 @@
+/** Sum the `amount` field across an expense list, guarding against missing values. */
+export function sumExpenses(items: { amount?: number | null }[]): number {
+  return items.reduce((acc, item) => acc + (item.amount ?? 0), 0);
+}
+
 export function formatCurrency(amount: number, currency = 'INR'): string {
   try {
     return new Intl.NumberFormat('en-IN', {

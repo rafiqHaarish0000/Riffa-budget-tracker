@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   backPressed: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
   title: {
     textAlign: 'center',
@@ -184,6 +184,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   secondaryPressed: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
 });

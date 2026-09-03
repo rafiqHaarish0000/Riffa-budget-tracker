@@ -4,9 +4,11 @@ import { StyleSheet, View, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FloatingAddButton } from '../../components/navigation/FloatingAddButton';
 import { RequireAuth } from '../../components/RouteGuard';
-import { colors, fontFamily, iconSizes, spacing, typography } from '../../constants/theme';
+import { colors, iconSizes, spacing, typography } from '../../constants/theme';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
+
+const TAB_BAR_BASE_HEIGHT = 64;
 
 function tabIcon(focused: IconName, unfocused: IconName) {
   return function TabIcon({ color, focused: isFocused }: { color: ColorValue; focused: boolean }) {
@@ -20,7 +22,7 @@ function AddExpenseOverlay({ onPress }: { onPress?: () => void }) {
   return (
     <View
       pointerEvents="box-none"
-      style={[styles.overlay, { bottom: (insets.bottom || spacing.sm) + 44 }]}
+      style={[styles.overlay, { bottom: insets.bottom + TAB_BAR_BASE_HEIGHT - 20 }]}
     >
       <FloatingAddButton onPress={onPress} />
     </View>
@@ -29,6 +31,7 @@ function AddExpenseOverlay({ onPress }: { onPress?: () => void }) {
 
 export default function TabsLayout() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   return (
     <RequireAuth>
       <View style={styles.root}>
@@ -37,7 +40,8 @@ export default function TabsLayout() {
             headerShown: false,
             tabBarActiveTintColor: colors.accent,
             tabBarInactiveTintColor: colors.textMuted,
-            tabBarStyle: styles.tabBar,
+            tabBarStyle: [styles.tabBar, { height: TAB_BAR_BASE_HEIGHT + insets.bottom }],
+            tabBarItemStyle: styles.tabBarItem,
             tabBarLabelStyle: styles.tabBarLabel,
             tabBarHideOnKeyboard: true,
           }}
@@ -93,13 +97,14 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
     backgroundColor: colors.surface,
-    height: 64,
     paddingTop: spacing.xs,
+    paddingBottom: 0,
     elevation: 0,
   },
+  tabBarItem: {
+    justifyContent: 'center',
+  },
   tabBarLabel: {
-    fontFamily,
-    fontSize: 11,
-    fontWeight: '600',
+    ...typography.label,
   },
 });

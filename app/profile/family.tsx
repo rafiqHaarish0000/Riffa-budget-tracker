@@ -13,6 +13,7 @@ import {
 } from '../../components/ui/glass';
 import { ThemedScreen } from '../../components/ui/ThemedScreen';
 import { ThemedText } from '../../components/ui/ThemedText';
+import { ScreenState, ScreenStateSkeleton } from '../../components/ui/ScreenState';
 import { colors, iconSizes, radius, spacing } from '../../constants/theme';
 import { useAuth } from '../../hooks/useAuth';
 import { useFamily } from '../../hooks/useFamily';
@@ -152,14 +153,10 @@ export default function FamilyScreen() {
     return (
       <ThemedScreen scroll>
         <FadeInView delay={0}>
-          <View style={styles.skeletonCard} />
+          <ScreenStateSkeleton tall style={styles.skeleton} />
         </FadeInView>
         <FadeInView delay={80}>
-          <View style={styles.skeletonCode} />
-        </FadeInView>
-        <FadeInView delay={160}>
-          <View style={styles.skeletonRow} />
-          <View style={styles.skeletonRow} />
+          <ScreenStateSkeleton rows={2} />
         </FadeInView>
       </ThemedScreen>
     );
@@ -169,22 +166,14 @@ export default function FamilyScreen() {
   if (error && !family) {
     return (
       <ThemedScreen>
-        <View style={styles.stateWrap}>
-          <View style={styles.stateIcon}>
-            <Ionicons name="people-outline" size={iconSizes.xl} color={colors.accentStrong} />
-          </View>
-          <ThemedText variant="subheading" color={colors.text} style={styles.stateTitle}>
-            Unable to load your family.
-          </ThemedText>
-          <ThemedText variant="caption" color={colors.textMuted} style={styles.stateText}>
-            Please try again.
-          </ThemedText>
-          <GlassButton
-            title="Try Again"
-            onPress={() => void refetch()}
-            style={styles.stateButton}
-          />
-        </View>
+        <ScreenState
+          kind="error"
+          icon="people-outline"
+          title="Unable to load your family"
+          message="Please try again."
+          actionLabel="Try Again"
+          onAction={() => void refetch()}
+        />
       </ThemedScreen>
     );
   }
@@ -468,31 +457,9 @@ const styles = StyleSheet.create({
   modalButton: {
     flex: 1,
   },
-  stateWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-  },
-  stateIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  stateTitle: {
-    textAlign: 'center',
-  },
   stateText: {
     textAlign: 'center',
     marginTop: spacing.xs,
-  },
-  stateButton: {
-    marginTop: spacing.lg,
-    minWidth: 160,
   },
   emptyCard: {
     alignItems: 'center',
@@ -527,22 +494,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.xxxl,
   },
-  skeletonCard: {
-    height: 180,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
+  skeleton: {
     marginBottom: spacing.xxl,
-  },
-  skeletonCode: {
-    height: 120,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-    marginBottom: spacing.xxl,
-  },
-  skeletonRow: {
-    height: 64,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-    marginBottom: spacing.md,
   },
 });

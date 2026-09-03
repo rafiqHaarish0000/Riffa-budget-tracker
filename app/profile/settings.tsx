@@ -317,6 +317,19 @@ export default function SettingsScreen() {
               </View>
               <Ionicons name="chevron-forward" size={iconSizes.sm} color={colors.textMuted} />
             </Pressable>
+
+            <View style={styles.divider} />
+
+            <View style={styles.valueRow}>
+              <View style={styles.valueRowBody}>
+                <ThemedText variant="body" color={colors.textSecondary}>
+                  Push notifications
+                </ThemedText>
+                <ThemedText variant="caption" color={colors.textMuted}>
+                  Coming later
+                </ThemedText>
+              </View>
+            </View>
           </GlassCard>
         </GlassSection>
       </FadeInView>
@@ -367,7 +380,12 @@ export default function SettingsScreen() {
         </ThemedText>
       ) : null}
 
-      <GlassModal visible={moneyModal !== null} onClose={closeMoneyModal} presentationStyle="bottomSheet">
+      <GlassModal
+        visible={moneyModal !== null}
+        onClose={closeMoneyModal}
+        presentationStyle="bottomSheet"
+        scroll
+      >
         <ThemedText variant="heading" color={colors.text} style={styles.sheetTitle}>
           {moneyModal === 'income' ? 'Monthly income' : 'Monthly budget'}
         </ThemedText>

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
-import { GlassCard } from '../../components/ui/glass';
+import { GlassButton, GlassCard } from '../../components/ui/glass';
 import { ThemedScreen } from '../../components/ui/ThemedScreen';
 import { ThemedText } from '../../components/ui/ThemedText';
 import { colors, glass, iconSizes, radius, shadows, spacing } from '../../constants/theme';
@@ -32,19 +32,12 @@ export default function IntroScreen() {
       </ThemedText>
 
       <View style={styles.actions}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Continue with Email"
+        <GlassButton
+          title="Continue with Email"
           onPress={() => router.push('/sign-in')}
-          style={({ pressed }) => [styles.primary, pressed && styles.primaryPressed]}
-        >
-          <View style={styles.primaryContent}>
-            <Ionicons name="mail-outline" size={iconSizes.lg} color={colors.textInverse} />
-            <ThemedText variant="bodyMedium" color={colors.textInverse}>
-              Continue with Email
-            </ThemedText>
-          </View>
-        </Pressable>
+          leading={<Ionicons name="mail-outline" size={iconSizes.lg} color={colors.textInverse} />}
+          style={styles.primaryButton}
+        />
 
         <Pressable
           accessibilityRole="button"
@@ -195,23 +188,8 @@ const styles = StyleSheet.create({
     marginTop: 'auto',
     paddingTop: spacing.lg,
   },
-  primary: {
-    minHeight: 52,
-    borderRadius: radius.md,
+  primaryButton: {
     backgroundColor: colors.text,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-    ...shadows.subtle,
-  },
-  primaryContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  primaryPressed: {
-    opacity: 0.85,
   },
   secondary: {
     minHeight: 44,
@@ -220,7 +198,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   secondaryPressed: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
   privacy: {
     textAlign: 'center',

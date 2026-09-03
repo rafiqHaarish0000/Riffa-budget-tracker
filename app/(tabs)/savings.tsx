@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { FadeInView } from '../../components/dashboard/FadeInView';
 import { GlassButton, GlassCard, GlassSection } from '../../components/ui/glass';
+import { ScreenState, ScreenStateSkeleton } from '../../components/ui/ScreenState';
 import { ThemedScreen } from '../../components/ui/ThemedScreen';
 import { ThemedText } from '../../components/ui/ThemedText';
 import { colors, iconSizes, radius, spacing } from '../../constants/theme';
@@ -85,10 +86,10 @@ export default function SavingsScreen() {
           </View>
         </FadeInView>
         <FadeInView delay={60}>
-          <View style={styles.skeletonCard} />
+          <ScreenStateSkeleton tall style={styles.skeleton} />
         </FadeInView>
         <FadeInView delay={120}>
-          <View style={styles.skeletonCardTall} />
+          <ScreenStateSkeleton rows={3} />
         </FadeInView>
       </ThemedScreen>
     );
@@ -108,20 +109,14 @@ export default function SavingsScreen() {
           </View>
         </FadeInView>
         <FadeInView delay={60}>
-          <GlassCard style={styles.stateCard}>
-            <ThemedText variant="subheading" color={colors.text}>
-              Unable to load savings
-            </ThemedText>
-            <ThemedText variant="caption" color={colors.textMuted} style={styles.stateText}>
-              We couldn&apos;t load your savings goals.
-            </ThemedText>
-            <GlassButton
-              title="Try again"
-              variant="secondary"
-              onPress={() => refetch()}
-              style={styles.actionButton}
-            />
-          </GlassCard>
+          <ScreenState
+            kind="error"
+            title="Unable to load savings"
+            message="We couldn&apos;t load your savings goals."
+            actionLabel="Try again"
+            actionVariant="secondary"
+            onAction={() => refetch()}
+          />
         </FadeInView>
       </ThemedScreen>
     );
@@ -152,23 +147,14 @@ export default function SavingsScreen() {
 
       {!hasGoals ? (
         <FadeInView delay={60}>
-          <GlassCard style={styles.stateCard}>
-            <View style={styles.stateIcon}>
-              <Ionicons name="wallet-outline" size={iconSizes.xl} color={colors.accentStrong} />
-            </View>
-            <ThemedText variant="subheading" color={colors.text}>
-              Start saving together
-            </ThemedText>
-            <ThemedText variant="caption" color={colors.textMuted} style={styles.stateText}>
-              Create your first goal and track the progress as you get closer.
-            </ThemedText>
-            <GlassButton
-              title="Create goal"
-              variant="primary"
-              onPress={openCreate}
-              style={styles.actionButton}
-            />
-          </GlassCard>
+          <ScreenState
+            kind="empty"
+            icon="wallet-outline"
+            title="Start saving together"
+            message="Create your first goal and track the progress as you get closer."
+            actionLabel="Create goal"
+            onAction={openCreate}
+          />
         </FadeInView>
       ) : (
         <>
@@ -338,7 +324,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
   },
   pressed: {
-    opacity: 0.85,
+    opacity: 0.7,
   },
   goalTop: {
     flexDirection: 'row',
@@ -379,36 +365,7 @@ const styles = StyleSheet.create({
   goalAmountRow: {
     marginTop: spacing.md,
   },
-  stateCard: {
-    alignItems: 'center',
-    paddingVertical: spacing.xxxl,
-  },
-  stateIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  stateText: {
-    textAlign: 'center',
-    marginTop: spacing.xs,
-  },
-  actionButton: {
-    marginTop: spacing.lg,
-    minWidth: 140,
-  },
-  skeletonCard: {
-    height: 140,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
+  skeleton: {
     marginBottom: spacing.lg,
-  },
-  skeletonCardTall: {
-    height: 240,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
   },
 });

@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
-import { colors, radius, spacing, typography } from '../../../constants/theme';
+import { Pressable, StyleSheet, ViewStyle } from 'react-native';
+import { colors, radius, spacing } from '../../../constants/theme';
+import { ThemedText } from '../ThemedText';
 
 type GlassChipProps = {
   label: string;
@@ -15,17 +16,24 @@ export function GlassChip({ label, selected = false, onPress, style }: GlassChip
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected }}
       disabled={!isInteractive}
       style={[styles.chip, selected && styles.chipSelected, style]}
     >
-      <Text style={[styles.label, selected && styles.labelSelected]}>{label}</Text>
+      <ThemedText
+        variant="captionBold"
+        color={selected ? colors.textInverse : colors.textSecondary}
+      >
+        {label}
+      </ThemedText>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   chip: {
-    minHeight: 36,
+    minHeight: 40,
     minWidth: 44,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.pill,
@@ -38,12 +46,5 @@ const styles = StyleSheet.create({
   chipSelected: {
     backgroundColor: colors.accent,
     borderColor: colors.accent,
-  },
-  label: {
-    ...typography.captionBold,
-    color: colors.textSecondary,
-  },
-  labelSelected: {
-    color: colors.textInverse,
   },
 });

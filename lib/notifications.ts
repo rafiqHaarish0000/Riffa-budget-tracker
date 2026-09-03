@@ -1,34 +1,40 @@
 import { supabase } from './supabase';
-import type { NotificationType } from '../types/notification';
-
-type NotifyPayload = {
-  type: NotificationType;
-  title: string;
-  message: string;
-  route?: string | null;
-  metadata?: Record<string, unknown> | null;
-};
 
 /**
- * Fire-and-forget helper used at client mutation points to notify the other
- * members of the caller's family. All recipient resolution and authorization
- * happen inside the SECURITY DEFINER `notify_family` RPC; the client only ever
- * supplies content, never a target user. Failures are intentionally swallowed
- * so a missing/errant notification backend can never break the primary action.
+ * Fire-and-forget helpers used at client mutation points to notify the other
+ * members of the caller's family. They call narrowly-scoped SECURITY DEFINER
+ * RPCs (`notify_shared_expense`, `notify_savings_contribution`) that derive the
+ * actor, family, recipients, type, title/message, and route entirely on the
+ * server from real domain rows. The client can never choose a recipient or
+ * forge notification content. Failures are intentionally swallowed so a
+ * missing/errant notification backend can never break the primary action.
  */
-export async function notifyFamily(payload: NotifyPayload): Promise<void> {
+
+/** Notify the family about a just-created shared expense. */
+export async function notifySharedExpense(expenseId: string): Promise<void> {
   try {
-    const { error } = await supabase.rpc('notify_family', {
-      p_type: payload.type,
-      p_title: payload.title,
-      p_message: payload.message,
-      p_route: payload.route ?? null,
-      p_metadata: payload.metadata ?? null,
+    const { error } = await supabase.rpc('notify_shared_expense', {
+      p_expense_id: expenseId,
     });
     if (error) {
-      console.warn('[notifications] notify_family:', error.message);
+      console.warn('[notifications] notify_shared_expense:', error.message);
     }
   } catch (err) {
-    console.warn('[notifications] notify_family threw:', err);
+    console.warn('[notifications] notify_shared_expense threw:', err);
+  }
+}
+
+/** Notify the family about a just-added savings contribution. */
+export async function notifySavingsContribution(goalId: string, amount: number): Promise<void> {
+  try {
+    const { error } = await supabase.rpc('notify_savings_contribution', {
+      p_goal_id: goalId,
+      p_amount: amount,
+    });
+    if (error) {
+      console.warn('[notifications] notify_savings_contribution:', error.message);
+    }
+  } catch (err) {
+    console.warn('[notifications] notify_savings_contribution threw:', err);
   }
 }

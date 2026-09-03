@@ -1,23 +1,34 @@
 import { BlurView } from 'expo-blur';
 import { PropsWithChildren, useEffect } from 'react';
 import {
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   View,
-  Platform,
   useWindowDimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, glass, radius, shadows, spacing } from '../../../constants/theme';
 
 type GlassModalProps = PropsWithChildren<{
   visible: boolean;
   onClose: () => void;
   presentationStyle?: 'bottomSheet' | 'center';
+  scroll?: boolean;
 }>;
 
-export function GlassModal({ visible, onClose, presentationStyle = 'bottomSheet', children }: GlassModalProps) {
+export function GlassModal({
+  visible,
+  onClose,
+  presentationStyle = 'bottomSheet',
+  scroll = false,
+  children,
+}: GlassModalProps) {
   const { height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const sheet = presentationStyle === 'bottomSheet';
 
   useEffect(() => {
@@ -35,24 +46,55 @@ export function GlassModal({ visible, onClose, presentationStyle = 'bottomSheet'
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.flex}
+      >
         <Pressable
-          style={[
-            styles.sheet,
-            sheet ? { maxHeight: height * 0.8 } : styles.centered,
-          ]}
+          accessibilityRole="none"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={styles.backdrop}
+          onPress={onClose}
         >
-          <BlurView intensity={glass.blur.heavy} tint="extraLight" style={sheet ? styles.blurSheet : styles.blurCenter}>
-            {sheet ? <View style={styles.grabber} /> : null}
-            {children}
-          </BlurView>
+          <Pressable
+            accessibilityRole="none"
+            style={[
+              styles.sheet,
+              sheet
+                ? { maxHeight: height * 0.8, paddingBottom: Math.max(insets.bottom, 0) }
+                : styles.centered,
+            ]}
+          >
+            <BlurView
+              intensity={glass.blur.heavy}
+              tint="extraLight"
+              style={sheet ? styles.blurSheet : styles.blurCenter}
+            >
+              {sheet ? <View style={styles.grabber} /> : null}
+              {sheet && scroll ? (
+                <ScrollView
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.scrollContent}
+                >
+                  {children}
+                </ScrollView>
+              ) : (
+                children
+              )}
+            </BlurView>
+          </Pressable>
         </Pressable>
-      </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
   backdrop: {
     flex: 1,
     backgroundColor: colors.overlay,
@@ -96,5 +138,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.textMuted,
     opacity: 0.4,
     marginBottom: spacing.lg,
+  },
+  scrollContent: {
+    paddingBottom: spacing.sm,
   },
 });

@@ -2,6 +2,7 @@
   "expo": {
     "name": "RIFAA",
     "slug": "riffa",
+    "description": "Shared money, together.",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -31,15 +32,19 @@
     },
     "web": {
       "favicon": "./assets/favicon.png",
+      "name": "RIFAA",
+      "shortName": "RIFAA",
+      "description": "Shared money, together.",
       "bundler": "metro",
       "output": "static",
       "backgroundColor": "#F5F6F4",
-      "themeColor": "#F5F6F4"
+      "themeColor": "#F5F6F4",
+      "display": "standalone",
+      "orientation": "portrait"
     },
     "plugins": [
       "expo-router",
       "expo-status-bar",
-      "expo-web-browser",
       "expo-image-picker"
     ]
   }

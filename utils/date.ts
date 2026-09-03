@@ -90,6 +90,29 @@ export function formatDateLong(value: string): string {
 }
 
 /**
+ * Full date + time label for a Supabase timestamp (e.g. `created_at`), which
+ * is a full ISO string — unlike `formatDateLong`, which expects a plain
+ * `YYYY-MM-DD` and would otherwise render "Invalid Date".
+ * Example: "2 September 2026, 2:34 PM".
+ */
+export function formatDateTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  const day = date.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  const time = date.toLocaleTimeString('en-IN', {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+  return `${day}, ${time}`;
+}
+
+/**
  * Compact relative timestamp for notification timestamps: "Just now", "5m",
  * "2h", "3d", or a short date for anything older.
  */

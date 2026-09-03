@@ -8,6 +8,7 @@ import { DateField } from '../../components/expense/DateField';
 import { GlassButton, GlassCard, GlassModal, GlassSection } from '../../components/ui/glass';
 import { ThemedScreen } from '../../components/ui/ThemedScreen';
 import { ThemedText } from '../../components/ui/ThemedText';
+import { ScreenState, ScreenStateSkeleton } from '../../components/ui/ScreenState';
 import { colors, iconSizes, radius, spacing } from '../../constants/theme';
 import { useAuth } from '../../hooks/useAuth';
 import { useSavings } from '../../hooks/useSavings';
@@ -211,10 +212,10 @@ export default function SavingsDetailsScreen() {
     return (
       <ThemedScreen scroll>
         <FadeInView delay={0}>
-          <View style={styles.skeletonCard} />
+          <ScreenStateSkeleton tall style={styles.skeleton} />
         </FadeInView>
         <FadeInView delay={80}>
-          <View style={styles.skeletonTall} />
+          <ScreenStateSkeleton rows={3} />
         </FadeInView>
       </ThemedScreen>
     );
@@ -502,27 +503,17 @@ function NotFoundState({
 }) {
   return (
     <ThemedScreen>
-      <View style={styles.notFound}>
-        <View style={styles.stateIcon}>
-          <Ionicons name="wallet-outline" size={iconSizes.xl} color={colors.accentStrong} />
-        </View>
-        <ThemedText variant="subheading" color={colors.text} style={styles.notFoundTitle}>
-          {title}
-        </ThemedText>
-        {description ? (
-          <ThemedText variant="caption" color={colors.textMuted} style={styles.stateText}>
-            {description}
-          </ThemedText>
-        ) : null}
-        <GlassButton title="Go back" variant="secondary" onPress={onBack} style={styles.backButton} />
-        {onRetry ? (
-          <GlassButton
-            title="Try again"
-            onPress={onRetry}
-            style={[styles.backButton, styles.retryButton]}
-          />
-        ) : null}
-      </View>
+      <ScreenState
+        kind="error"
+        icon="wallet-outline"
+        title={title}
+        message={description}
+        actionLabel="Go back"
+        actionVariant="secondary"
+        onAction={onBack}
+        secondaryActionLabel={onRetry ? 'Try again' : undefined}
+        secondaryAction={onRetry}
+      />
     </ThemedScreen>
   );
 }
@@ -688,33 +679,8 @@ const styles = StyleSheet.create({
   modalButton: {
     flex: 1,
   },
-  notFound: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-  },
-  notFoundTitle: {
-    textAlign: 'center',
-    marginBottom: spacing.xs,
-  },
-  backButton: {
-    marginTop: spacing.lg,
-    minWidth: 140,
-  },
-  retryButton: {
-    marginTop: spacing.md,
-  },
-  skeletonCard: {
-    height: 200,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
+  skeleton: {
     marginBottom: spacing.lg,
-  },
-  skeletonTall: {
-    height: 140,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
   },
   skeletonRow: {
     height: 64,

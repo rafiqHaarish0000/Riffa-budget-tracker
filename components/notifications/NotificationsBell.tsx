@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { colors, iconSizes, radius, spacing } from '../../constants/theme';
+import { colors, iconSizes, radius, spacing, typography } from '../../constants/theme';
 import { useNotifications } from '../../hooks/useNotifications';
 import { ThemedText } from '../ui/ThemedText';
 
@@ -63,7 +63,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   badgeText: {
-    fontSize: 11,
-    lineHeight: 14,
+    ...typography.label,
   },
 });

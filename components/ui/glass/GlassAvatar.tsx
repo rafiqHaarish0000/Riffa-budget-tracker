@@ -1,5 +1,5 @@
 import { Image, StyleSheet, Text, View, type ViewStyle } from 'react-native';
-import { colors, radius, typography } from '../../../constants/theme';
+import { colors, fontFamily, fontWeight, radius, typography } from '../../../constants/theme';
 
 type GlassAvatarProps = {
   uri?: string | null;
@@ -27,7 +27,9 @@ export function GlassAvatar({ uri, name, size = 44, style }: GlassAvatarProps) {
       {uri ? (
         <Image source={{ uri }} style={[styles.image, { borderRadius: size / 2 }]} />
       ) : (
-        <Text style={[styles.initials, { fontSize: size * 0.36 }]}>{initials}</Text>
+        <Text style={[styles.initials, { fontSize: size * 0.36, fontFamily, fontWeight: fontWeight.semibold }]}>
+          {initials}
+        </Text>
       )}
     </View>
   );

@@ -3,18 +3,19 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { colors, iconSizes, radius, spacing } from '../../constants/theme';
 import type { Expense } from '../../types/expense';
 import { formatCurrency } from '../../utils/format';
-import { GlassCard } from '../ui/glass';
+import { GlassButton, GlassCard } from '../ui/glass';
 import { ThemedText } from '../ui/ThemedText';
 import { CategoryIcon } from './CategoryIcon';
 
 type ExpenseListProps = {
   expenses: Expense[];
   onPressExpense: (id: string) => void;
+  onAddExpense?: () => void;
 };
 
-export function ExpenseList({ expenses, onPressExpense }: ExpenseListProps) {
+export function ExpenseList({ expenses, onPressExpense, onAddExpense }: ExpenseListProps) {
   if (expenses.length === 0) {
-    return <EmptyExpenses />;
+    return <EmptyExpenses onAddExpense={onAddExpense} />;
   }
 
   return (
@@ -53,7 +54,7 @@ function ExpenseRow({ expense, onPress }: { expense: Expense; onPress: () => voi
   );
 }
 
-function EmptyExpenses() {
+function EmptyExpenses({ onAddExpense }: { onAddExpense?: () => void }) {
   return (
     <GlassCard style={styles.emptyCard}>
       <View style={styles.emptyIcon}>
@@ -69,6 +70,13 @@ function EmptyExpenses() {
       >
         Add your first expense to start tracking.
       </ThemedText>
+      {onAddExpense ? (
+        <GlassButton
+          title="Add expense"
+          onPress={onAddExpense}
+          style={styles.addButton}
+        />
+      ) : null}
     </GlassCard>
   );
 }
@@ -91,7 +99,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   rowPressed: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
   rowMeta: {
     flex: 1,
@@ -112,5 +120,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,
+  },
+  addButton: {
+    marginTop: spacing.lg,
+    minWidth: 140,
   },
 });

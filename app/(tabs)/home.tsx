@@ -1,7 +1,8 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { GlassAvatar, GlassChip, GlassSection } from '../../components/ui/glass';
+import { GlassAvatar, GlassCard, GlassChip, GlassSection } from '../../components/ui/glass';
+import { ScreenState, ScreenStateSkeleton } from '../../components/ui/ScreenState';
 import { NotificationsBell } from '../../components/notifications/NotificationsBell';
 import { ThemedScreen } from '../../components/ui/ThemedScreen';
 import { ThemedText } from '../../components/ui/ThemedText';
@@ -18,7 +19,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useExpenses } from '../../hooks/useExpenses';
 import { useFamily } from '../../hooks/useFamily';
 import { useSavings } from '../../hooks/useSavings';
-import type { Expense } from '../../types/expense';
+import { sumExpenses } from '../../utils/format';
 
 type FamilyFilter = 'you' | 'partner' | 'shared';
 
@@ -46,20 +47,25 @@ function nextMonthStart(d: Date): string {
   return `${nextYear}-${pad(nextMonth)}-01`;
 }
 
-function sumExpenses(items: Expense[]): number {
-  return items.reduce((acc, item) => acc + (item.amount ?? 0), 0);
-}
-
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { members } = useFamily(user);
+  const {
+    members,
+    loading: familyLoading,
+    error: familyError,
+    refetch: refetchFamily,
+  } = useFamily(user);
   const {
     expenses,
+    loading: expensesLoading,
+    error: expensesError,
     refetch: refetchExpenses,
   } = useExpenses(user?.family_id ?? null, user?.id ?? null);
   const {
     goals,
+    loading: savingsLoading,
+    error: savingsError,
     refetch: refetchSavings,
   } = useSavings(user?.family_id ?? null, user?.id ?? null);
 
@@ -115,9 +121,10 @@ export default function HomeScreen() {
     useCallback(() => {
       refetchExpenses();
       refetchSavings();
+      refetchFamily();
       getDailyBudget().then(setBudget);
       getMonthlyIncome().then(setIncome);
-    }, [refetchExpenses, refetchSavings]),
+    }, [refetchExpenses, refetchSavings, refetchFamily]),
   );
 
   const partner = useMemo(
@@ -126,6 +133,8 @@ export default function HomeScreen() {
   );
   const partnerId = partner?.user_id ?? null;
   const partnerName = partner?.user?.name?.trim().split(/\s+/)[0] || null;
+
+  const homeError = expensesError ?? savingsError ?? familyError;
 
   const now = new Date();
   const today = dayKey(now);
@@ -203,7 +212,26 @@ export default function HomeScreen() {
       </FadeInView>
 
       <FadeInView delay={60} style={styles.sectionGap}>
-        <BudgetCard budget={budget} spent={spentToday} />
+        {homeError ? (
+          <ScreenState
+            kind="error"
+            compact
+            contained
+            title="Couldn't load your dashboard"
+            message="Check your connection and try again."
+            actionLabel="Try again"
+            actionVariant="secondary"
+            onAction={() => {
+              refetchExpenses();
+              refetchSavings();
+              refetchFamily();
+            }}
+          />
+        ) : expensesLoading ? (
+          <ScreenStateSkeleton rows={3} tall />
+        ) : (
+          <BudgetCard budget={budget} spent={spentToday} />
+        )}
       </FadeInView>
 
       <GlassSection title="Today's expenses">
@@ -224,37 +252,65 @@ export default function HomeScreen() {
             />
           </View>
           <View style={styles.cardGap}>
-            <ExpenseList
-              expenses={filteredToday}
-              onPressExpense={(id) => router.push({ pathname: '/expense/details', params: { id } })}
-            />
+            {expensesLoading ? (
+              <ScreenStateSkeleton rows={3} />
+            ) : (
+              <ExpenseList
+                expenses={filteredToday}
+                onPressExpense={(id) =>
+                  router.push({ pathname: '/expense/details', params: { id } })
+                }
+                onAddExpense={() => router.push('/expense/add')}
+              />
+            )}
           </View>
         </FadeInView>
       </GlassSection>
 
       <GlassSection title="Monthly overview">
         <FadeInView delay={180}>
-          <OverviewCard
-            income={income}
-            expenses={monthlyExpensesTotal}
-            savings={savingsThisMonth}
-            remaining={remaining}
-          />
+          {expensesLoading || savingsLoading ? (
+            <ScreenStateSkeleton rows={2} />
+          ) : homeError ? (
+            <ScreenState
+              kind="empty"
+              compact
+              contained
+              title="No spending data yet"
+              message="Your overview will appear once expenses are loaded."
+            />
+          ) : (
+            <OverviewCard
+              income={income}
+              expenses={monthlyExpensesTotal}
+              savings={savingsThisMonth}
+              remaining={remaining}
+            />
+          )}
         </FadeInView>
       </GlassSection>
 
       <GlassSection title="Spending breakdown">
         <FadeInView delay={240}>
-          <BreakdownCard personal={myPersonalMonth} shared={sharedMonth} />
+          {expensesLoading ? (
+            <ScreenStateSkeleton rows={2} />
+          ) : (
+            <BreakdownCard personal={myPersonalMonth} shared={sharedMonth} />
+          )}
         </FadeInView>
       </GlassSection>
 
       <GlassSection title="Savings">
         <FadeInView delay={300}>
-          <SavingsPreviewCard
-            goals={previewGoals}
-            onViewAll={() => router.push('/(tabs)/savings')}
-          />
+          {savingsLoading ? (
+            <ScreenStateSkeleton rows={2} />
+          ) : (
+            <SavingsPreviewCard
+              goals={previewGoals}
+              onViewAll={() => router.push('/(tabs)/savings')}
+              onCreateGoal={() => router.push('/savings/create')}
+            />
+          )}
         </FadeInView>
       </GlassSection>
     </ThemedScreen>
@@ -277,7 +333,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   pressed: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
   sectionGap: {
     marginTop: spacing.lg,

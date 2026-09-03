@@ -4,14 +4,15 @@ import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { ExpenseList } from '../../components/dashboard/ExpenseList';
 import { FadeInView } from '../../components/dashboard/FadeInView';
-import { GlassButton, GlassCard, GlassSection } from '../../components/ui/glass';
+import { GlassCard, GlassSection } from '../../components/ui/glass';
 import { ThemedScreen } from '../../components/ui/ThemedScreen';
 import { ThemedText } from '../../components/ui/ThemedText';
+import { ScreenState, ScreenStateSkeleton } from '../../components/ui/ScreenState';
 import { colors, iconSizes, radius, spacing } from '../../constants/theme';
 import { useAuth } from '../../hooks/useAuth';
 import { useExpenses, type ExpenseDateRange } from '../../hooks/useExpenses';
 import { addMonths, formatDateLong, isSameDay, monthGrid, startOfMonth, toISODate } from '../../utils/date';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency, sumExpenses } from '../../utils/format';
 import type { Expense } from '../../types/expense';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -30,10 +31,6 @@ function monthStartKey(d: Date): string {
 
 function lastDayOfMonth(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth() + 1, 0);
-}
-
-function sumExpenses(items: Expense[]): number {
-  return items.reduce((acc, item) => acc + (item.amount ?? 0), 0);
 }
 
 export default function CalendarScreen() {
@@ -283,38 +280,25 @@ export default function CalendarScreen() {
       </View>
 
       {loading ? (
-        <GlassCard style={styles.stateCard}>
-          <ThemedText variant="body" color={colors.textMuted}>
-            Loading expenses…
-          </ThemedText>
-        </GlassCard>
+        <ScreenStateSkeleton rows={3} />
       ) : error ? (
-        <GlassCard style={styles.stateCard}>
-          <ThemedText variant="subheading" color={colors.text}>
-            Something went wrong
-          </ThemedText>
-          <ThemedText variant="caption" color={colors.textMuted} style={styles.stateText}>
-            We couldn&apos;t load your expenses.
-          </ThemedText>
-          <GlassButton
-            title="Retry"
-            variant="secondary"
-            onPress={() => refetch()}
-            style={styles.retryButton}
-          />
-        </GlassCard>
+        <ScreenState
+          kind="error"
+          icon="alert-circle-outline"
+          title="Something went wrong"
+          message="We couldn&apos;t load your expenses."
+          actionLabel="Retry"
+          actionVariant="secondary"
+          onAction={() => refetch()}
+        />
       ) : selectedExpenses.length === 0 ? (
-        <GlassCard style={styles.stateCard}>
-          <View style={styles.stateIcon}>
-            <Ionicons name="calendar-outline" size={iconSizes.xl} color={colors.accentStrong} />
-          </View>
-          <ThemedText variant="subheading" color={colors.text}>
-            No expenses
-          </ThemedText>
-          <ThemedText variant="caption" color={colors.textMuted} style={styles.stateText}>
-            Nothing was recorded for this day.
-          </ThemedText>
-        </GlassCard>
+        <ScreenState
+          kind="empty"
+          icon="calendar-outline"
+          title="No expenses"
+          message="Nothing was recorded for this day."
+          compact
+        />
       ) : (
         <ExpenseList
           expenses={selectedExpenses}
@@ -404,7 +388,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   todayLinkPressed: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -422,26 +406,5 @@ const styles = StyleSheet.create({
   daySubtitle: {
     marginTop: spacing.xs,
     marginBottom: spacing.md,
-  },
-  stateCard: {
-    alignItems: 'center',
-    paddingVertical: spacing.xxxl,
-  },
-  stateIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  stateText: {
-    textAlign: 'center',
-    marginTop: spacing.xs,
-  },
-  retryButton: {
-    marginTop: spacing.lg,
-    minWidth: 120,
   },
 });

@@ -3,7 +3,6 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  Text,
   TextInput,
   View,
   type TextInputProps,
@@ -11,6 +10,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { colors, radius, shadows, spacing, typography } from '../../../constants/theme';
+import { ThemedText } from '../ThemedText';
 
 type GlassInputProps = TextInputProps & {
   label?: string;
@@ -26,6 +26,7 @@ export function GlassInput({
   style,
   inputStyle,
   secureTextEntry,
+  accessibilityLabel,
   ...rest
 }: GlassInputProps) {
   const [focused, setFocused] = useState(false);
@@ -34,11 +35,16 @@ export function GlassInput({
 
   return (
     <View style={[styles.container, style]}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
+      {label ? (
+        <ThemedText variant="label" color={colors.textSecondary}>
+          {label}
+        </ThemedText>
+      ) : null}
       <View style={[styles.field, focused && styles.fieldFocused]}>
         {icon ? <View style={styles.icon}>{icon}</View> : null}
         <TextInput
           {...rest}
+          accessibilityLabel={accessibilityLabel ?? label}
           secureTextEntry={showToggle ? hidden : secureTextEntry}
           onFocus={(e) => {
             setFocused(true);
@@ -56,11 +62,12 @@ export function GlassInput({
         {showToggle ? (
           <Pressable
             accessibilityRole="button"
+            accessibilityLabel={hidden ? 'Show password' : 'Hide password'}
             onPress={() => setHidden((v) => !v)}
             hitSlop={8}
             style={styles.toggle}
           >
-            <Text style={styles.toggleLabel}>{hidden ? 'Show' : 'Hide'}</Text>
+            <ThemedText variant="captionBold" color={colors.accent}>{hidden ? 'Show' : 'Hide'}</ThemedText>
           </Pressable>
         ) : null}
       </View>
@@ -71,12 +78,6 @@ export function GlassInput({
 const styles = StyleSheet.create({
   container: {
     marginBottom: spacing.lg,
-  },
-  label: {
-    ...typography.label,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-    marginLeft: spacing.xs,
   },
   field: {
     flexDirection: 'row',
@@ -100,14 +101,9 @@ const styles = StyleSheet.create({
     minHeight: 50,
     ...typography.body,
     color: colors.text,
-    fontSize: 16,
     ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as unknown as TextStyle) : null),
   },
   toggle: {
     paddingLeft: spacing.md,
-  },
-  toggleLabel: {
-    ...typography.captionBold,
-    color: colors.accent,
   },
 });
